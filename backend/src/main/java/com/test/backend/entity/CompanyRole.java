@@ -5,9 +5,9 @@ package com.test.backend.entity;
  * Defines the different roles a user can have within a company.
  */
 public enum CompanyRole {
-    OWNER("Owner"),
-    ADMIN("Administrator"), 
-    MEMBER("Member");
+    OWNER("OWNER"),
+    ADMIN("ADMIN"), 
+    MEMBER("MEMBER");
     
     private final String displayName;
     
