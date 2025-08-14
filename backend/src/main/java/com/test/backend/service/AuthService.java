@@ -5,6 +5,7 @@ import com.test.backend.dto.AuthResponse;
 import com.test.backend.dto.RegisterRequest;
 import com.test.backend.dto.UserDto;
 import com.test.backend.entity.User;
+import com.test.backend.enums.UserRole;
 import com.test.backend.repository.UserRepository;
 import com.test.backend.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +48,7 @@ public class AuthService {
         String accessToken = jwtUtil.generateToken(userDetails);
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
-        UserDto userDto = new UserDto(user.getId(), user.getUsername(), user.getSurname(), user.getEmail());
+        UserDto userDto = new UserDto(user.getId(), user.getUsername(), user.getSurname(), user.getEmail(), user.getRole());
 
         return new AuthResponse(accessToken, refreshToken, 86400000L, userDto);
     }
@@ -62,6 +63,7 @@ public class AuthService {
         user.setSurname(request.getSurname());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(UserRole.USER); // Explicitly set role to USER for security
 
         userRepository.save(user);
 
@@ -69,7 +71,7 @@ public class AuthService {
         String accessToken = jwtUtil.generateToken(userDetails);
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
-        UserDto userDto = new UserDto(user.getId(), user.getUsername(), user.getSurname(), user.getEmail());
+        UserDto userDto = new UserDto(user.getId(), user.getUsername(), user.getSurname(), user.getEmail(), user.getRole());
 
         return new AuthResponse(accessToken, refreshToken, 86400000L, userDto);
     }
@@ -87,7 +89,7 @@ public class AuthService {
         String newAccessToken = jwtUtil.generateToken(userDetails);
         String newRefreshToken = jwtUtil.generateRefreshToken(userDetails);
 
-        UserDto userDto = new UserDto(user.getId(), user.getUsername(), user.getSurname(), user.getEmail());
+        UserDto userDto = new UserDto(user.getId(), user.getUsername(), user.getSurname(), user.getEmail(), user.getRole());
 
         return new AuthResponse(newAccessToken, newRefreshToken, 86400000L, userDto);
     }
@@ -101,6 +103,6 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return new UserDto(user.getId(), user.getUsername(), user.getSurname(), user.getEmail());
+        return new UserDto(user.getId(), user.getUsername(), user.getSurname(), user.getEmail(), user.getRole());
     }
 }
