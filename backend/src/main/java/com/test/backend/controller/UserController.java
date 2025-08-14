@@ -1,7 +1,6 @@
 package com.test.backend.controller;
 
 import com.test.backend.dto.UserDto;
-import com.test.backend.dto.UserStatisticsDto;
 import com.test.backend.entity.User;
 import com.test.backend.enums.UserRole;
 import com.test.backend.repository.UserRepository;
@@ -91,30 +90,5 @@ public class UserController {
         
         userRepository.deleteById(userId);
         return ResponseEntity.ok("User deleted successfully");
-    }
-
-    @Operation(
-            summary = "Get User Statistics",
-            description = "Get user statistics by role (Moderator and Admin only)"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
-            @ApiResponse(responseCode = "403", description = "Access denied"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated")
-    })
-    @GetMapping("/statistics")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MODERATOR')")
-    public ResponseEntity<Object> getUserStatistics() {
-        long totalUsers = userRepository.count();
-        long adminCount = userRepository.countByRole(UserRole.ADMIN);
-        long moderatorCount = userRepository.countByRole(UserRole.MODERATOR);
-        long userCount = userRepository.countByRole(UserRole.USER);
-        
-        return ResponseEntity.ok(new Object() {
-            public final long total = totalUsers;
-            public final long admins = adminCount;
-            public final long moderators = moderatorCount;
-            public final long users = userCount;
-        });
     }
 }
