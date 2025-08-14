@@ -1,2 +1,431 @@
 @import "tailwindcss";
 
+/* Custom scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f3f4f6;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Professional sidebar styles */
+.border-r-3 {
+  border-right-width: 3px;
+}
+
+/* Smooth transitions for collapsed sidebar */
+.sidebar-transition {
+  transition: width 0.3s ease-in-out;
+}
+
+/* Collapsed sidebar logo container */
+.sidebar-logo-collapsed {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Professional logo styling */
+.sidebar-logo {
+  transition: all 0.3s ease-in-out;
+}
+
+.sidebar-logo-icon {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.2s ease-in-out;
+}
+
+.sidebar-logo-icon:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Collapse button positioning */
+.collapse-button-positioned {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 8px;
+}
+
+/* Enhanced transitions for sidebar elements */
+.sidebar-element-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Logo text fade animation */
+.logo-text-fade {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.logo-text-fade.hidden {
+  opacity: 0;
+}
+
+/* Professional focus styles */
+*:focus {
+  outline: none;
+}
+
+/* Custom focus ring for buttons and interactive elements */
+.focus-ring:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1), 0 0 0 4px rgba(59, 130, 246, 0.2);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+/* Soft focus for form inputs */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1), 0 0 0 4px rgba(59, 130, 246, 0.15);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* Professional button focus states */
+button:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08), 0 0 0 4px rgba(59, 130, 246, 0.12);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+/* Sidebar navigation focus styles */
+.nav-link:focus {
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2), 0 0 0 2px rgba(59, 130, 246, 0.1);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+/* Company selector focus */
+.company-selector:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1), 0 0 0 3px rgba(59, 130, 246, 0.15);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* Remove harsh focus outlines from Tailwind defaults */
+.focus\:ring-blue-500:focus {
+  --tw-ring-color: rgba(59, 130, 246, 0.15) !important;
+  --tw-ring-offset-width: 1px !important;
+  --tw-ring-width: 3px !important;
+}
+
+.focus\:ring-2:focus {
+  --tw-ring-width: 2px !important;
+  --tw-ring-color: rgba(59, 130, 246, 0.12) !important;
+}
+
+/* Professional hover states */
+.hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* User dropdown animations */
+.dropdown-enter {
+  opacity: 0;
+  transform: scale(0.95) translateY(-10px);
+}
+
+.dropdown-enter-active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.dropdown-exit {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.dropdown-exit-active {
+  opacity: 0;
+  transform: scale(0.95) translateY(-10px);
+  transition: opacity 0.15s ease-in, transform 0.15s ease-in;
+}
+
+/* Professional user avatar styles */
+.user-avatar {
+  position: relative;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.user-avatar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+/* Status indicator animation */
+.status-indicator {
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Professional dropdown shadow */
+.dropdown-shadow {
+  box-shadow: 
+    0 10px 25px rgba(0, 0, 0, 0.1),
+    0 4px 10px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Enterprise navigation styles */
+.nav-link {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s;
+}
+
+.nav-link:hover::before {
+  left: 100%;
+}
+
+/* Professional badge styling */
+.enterprise-badge {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Enhanced shadows for enterprise design */
+.enterprise-shadow {
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.enterprise-shadow-lg {
+  box-shadow: 
+    0 10px 25px rgba(0, 0, 0, 0.1),
+    0 4px 10px rgba(0, 0, 0, 0.05),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Premium glass effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Professional gradient borders */
+.gradient-border-b {
+  border-bottom: 1px solid;
+  border-image: linear-gradient(90deg, #e5e7eb, #3b82f6, #e5e7eb) 1;
+}
+
+/* Icon container enhancements */
+.icon-container {
+  position: relative;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  transition: all 0.3s ease;
+}
+
+.icon-container:hover {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.15);
+}
+
+.icon-container.active {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+/* Typography enhancements */
+.tracking-tight {
+  letter-spacing: -0.025em;
+}
+
+/* Advanced transitions */
+.transition-enterprise {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Submenu connection line */
+.submenu-line {
+  position: relative;
+}
+
+.submenu-line::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, transparent, #e5e7eb, transparent);
+}
+
+/* Collapsed sidebar hover states */
+.collapsed-item:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.04) 100%);
+  transform: translateX(3px);
+  box-shadow: 
+    3px 0 12px rgba(59, 130, 246, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 0 12px 12px 0;
+}
+
+/* Collapsed sidebar specific styles */
+.sidebar-collapsed {
+  width: 4rem; /* 64px */
+}
+
+.sidebar-collapsed .nav-item {
+  width: 3rem; /* 48px */
+  height: 3rem; /* 48px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.25rem auto;
+}
+
+.sidebar-collapsed .nav-item .icon-container {
+  width: 2rem; /* 32px */
+  height: 2rem; /* 32px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure consistent spacing in collapsed mode */
+.collapsed-navigation {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+.collapsed-navigation .nav-link {
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+/* Icon alignment for collapsed state */
+.collapsed-icon {
+  width: 2rem !important;
+  height: 2rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.collapsed-icon svg {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+/* Collapsed sidebar hover submenu */
+.submenu-hover {
+  transform: translateX(-4px);
+  visibility: hidden;
+  opacity: 0;
+  transition: all 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+.group:hover .submenu-hover {
+  transform: translateX(0);
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Submenu arrow indicator */
+.submenu-arrow::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 20px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 5px 5px 0;
+  border-color: transparent #ffffff transparent transparent;
+  filter: drop-shadow(-1px 0 2px rgba(0, 0, 0, 0.1));
+  z-index: 10;
+}
+
+/* Enhanced hover states for collapsed items */
+.collapsed-item:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  transform: translateX(2px);
+  box-shadow: 2px 0 8px rgba(59, 130, 246, 0.15);
+}
+
+/* Submenu positioning and styling */
+.submenu-popover {
+  min-width: 220px;
+  max-width: 280px;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(8px);
+}
+
+/* Active indicator for collapsed submenu items */
+.submenu-active-indicator {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
