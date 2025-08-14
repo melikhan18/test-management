@@ -538,47 +538,50 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {navigation.map((item) => {
               if (item.type === 'item') {
                 return (
-                  <Link
-                    key={item.name}
-                    to={item.href!}
-                    className={`nav-link ${
-                      isActive(item.href)
-                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-r-3 border-blue-500 shadow-sm'
-                        : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 hover:text-gray-900 hover:shadow-sm'
-                    } group flex items-center transition-all duration-300 ${
-                      sidebarCollapsed 
-                        ? 'justify-center px-0 py-3 rounded-xl w-12 h-12 mx-auto' 
-                        : 'px-4 py-3 rounded-xl mx-2'
-                    }`}
-                    title={sidebarCollapsed ? item.name : undefined}
-                  >
-                    <div className={`rounded-lg flex items-center justify-center transition-all duration-200 ${
-                      sidebarCollapsed 
-                        ? 'w-8 h-8' 
-                        : 'w-8 h-8 mr-3'
-                    } ${
-                      isActive(item.href) 
-                        ? 'bg-blue-100 text-blue-600 shadow-sm' 
-                        : 'bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600'
-                    }`}>
-                      <item.icon className="h-4 w-4" />
-                    </div>
-                    {!sidebarCollapsed && (
-                      <>
-                        <div className="flex-1">
-                          <div className="font-medium tracking-tight">{item.name}</div>
-                          {isActive(item.href) && (
-                            <div className="text-xs text-blue-600 mt-0.5 font-medium">Current</div>
+                    <Link
+                      key={item.name}
+                      to={item.href!}
+                      className={`nav-link group flex items-center transition-all duration-300 relative ${
+                        sidebarCollapsed 
+                          ? 'justify-center px-0 py-3 rounded-xl w-12 h-12 mx-auto' 
+                          : 'px-4 py-3 rounded-xl mx-2'
+                      } ${
+                        isActive(item.href)
+                          ? 'bg-gradient-to-r from-blue-100/80 to-indigo-100/80 text-blue-700 font-semibold shadow-lg ring-2 ring-blue-200'
+                          : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 hover:text-gray-900 hover:shadow-sm'
+                      }`}
+                      title={sidebarCollapsed ? item.name : undefined}
+                    >
+                      {isActive(item.href) && !sidebarCollapsed && (
+                        <span className="absolute left-0 top-2 bottom-2 w-1.5 rounded-full bg-gradient-to-b from-blue-500 to-indigo-500 shadow-md"></span>
+                      )}
+                      <div className={`rounded-lg flex items-center justify-center transition-all duration-200 ${
+                        sidebarCollapsed 
+                          ? 'w-8 h-8' 
+                          : 'w-8 h-8 mr-3'
+                      } ${
+                        isActive(item.href) 
+                          ? 'bg-gradient-to-br from-blue-200 to-indigo-200 text-blue-700 shadow-md' 
+                          : 'bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600'
+                      }`}>
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                      {!sidebarCollapsed && (
+                        <>
+                          <div className="flex-1">
+                            <div className={`font-medium tracking-tight ${isActive(item.href) ? 'text-blue-700' : ''}`}>{item.name}</div>
+                            {isActive(item.href) && (
+                              <div className="text-xs text-blue-600 mt-0.5 font-semibold">Aktif</div>
+                            )}
+                          </div>
+                          {item.badge && (
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold shadow-sm ${isActive(item.href) ? 'bg-gradient-to-r from-blue-200 to-indigo-200 text-blue-800' : 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800'}`}>
+                              {item.badge}
+                            </span>
                           )}
-                        </div>
-                        {item.badge && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 shadow-sm">
-                            {item.badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </Link>
+                        </>
+                      )}
+                    </Link>
                 );
               }
 
@@ -713,30 +716,19 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             ))}
           </div>
 
-          {/* User info at bottom */}
-          <div className={`border-t border-gray-200 p-4 ${sidebarCollapsed ? 'px-2' : ''}`}>
-            {!sidebarCollapsed ? (
-              <div className="flex items-center">
-                <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center">
-                  <User className="h-5 w-5 text-white" />
-                </div>
-                <div className="ml-3 min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {user?.username} {user?.surname}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-center">
-                <div 
-                  className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center cursor-pointer"
-                  title={`${user?.username} ${user?.surname}`}
-                >
-                  <User className="h-5 w-5 text-white" />
-                </div>
-              </div>
-            )}
+          {/* Collapse/Expand Button at bottom */}
+          <div className="border-t border-gray-200 p-4 flex justify-center">
+            <button
+              onClick={toggleSidebarCollapse}
+              className="flex items-center justify-center w-10 h-10 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {sidebarCollapsed ? (
+                <ChevronRight className="w-5 h-5" />
+              ) : (
+                <ChevronLeft className="w-5 h-5" />
+              )}
+            </button>
           </div>
         </div>
       </div>
