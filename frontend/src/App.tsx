@@ -2,7 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, CompanyProvider, NotificationProvider, ProjectProvider, VersionProvider } from './contexts';
 import { ProtectedRoute, PublicRoute } from './components';
-import { LoginPage, RegisterPage, DashboardPage, CompaniesPage, ProjectsPage, VersionsPage } from './pages';
+import { LoginPage, RegisterPage, DashboardPage, CompaniesPage, ProjectsPage, VersionsPage, ProjectsRedirectPage, VersionsRedirectPage } from './pages';
 
 function App() {
   return (
@@ -45,6 +45,22 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <CompaniesPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/projects" 
+                  element={
+                    <ProtectedRoute>
+                      <ProjectsRedirectPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/versions" 
+                  element={
+                    <ProtectedRoute>
+                      <VersionsRedirectPage />
                     </ProtectedRoute>
                   } 
                 />

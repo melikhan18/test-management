@@ -19,12 +19,13 @@ import {
   UserPlus,
   Briefcase,
   Calendar,
+  Tag,
   MessageSquare,
   Bug,
   Target,
   LogOut
 } from 'lucide-react';
-import { useAuth } from '../../contexts';
+import { useAuth, useCompany, useProject } from '../../contexts';
 import { CompanySelector, ProjectSelector, VersionSelector, NotificationDropdown } from '../common';
 
 interface DashboardLayoutProps {
@@ -38,64 +39,8 @@ interface NavigationItem {
   badge?: number;
   children?: NavigationItem[];
   type?: 'item' | 'section';
+  disabled?: boolean;
 }
-
-const navigation: NavigationItem[] = [
-  { 
-    name: 'Dashboard', 
-    href: '/dashboard', 
-    icon: Home,
-    type: 'item'
-  },
-  {
-    name: 'Projects',
-    icon: FolderOpen,
-    type: 'section',
-    children: [
-      { name: 'All Projects', href: '/projects', icon: Briefcase },
-      { name: 'My Projects', href: '/projects/my', icon: User },
-      { name: 'Recent', href: '/projects/recent', icon: Calendar },
-      { name: 'Archived', href: '/projects/archived', icon: FileText },
-    ]
-  },
-  {
-    name: 'Issues',
-    icon: Bug,
-    type: 'section',
-    children: [
-      { name: 'All Issues', href: '/issues', icon: Bug },
-      { name: 'My Issues', href: '/issues/my', icon: Target },
-      { name: 'Reported by me', href: '/issues/reported', icon: MessageSquare },
-      { name: 'Recently updated', href: '/issues/recent', icon: Calendar },
-    ]
-  },
-  {
-    name: 'Reports',
-    icon: BarChart3,
-    type: 'section',
-    children: [
-      { name: 'Analytics', href: '/reports/analytics', icon: BarChart3 },
-      { name: 'Test Coverage', href: '/reports/coverage', icon: Target },
-      { name: 'Performance', href: '/reports/performance', icon: FileText },
-    ]
-  },
-  {
-    name: 'Team',
-    icon: Users,
-    type: 'section',
-    children: [
-      { name: 'Members', href: '/team/members', icon: Users },
-      { name: 'Invite Users', href: '/team/invite', icon: UserPlus },
-      { name: 'Roles & Permissions', href: '/team/permissions', icon: Shield },
-    ]
-  },
-  { 
-    name: 'Companies', 
-    href: '/companies', 
-    icon: Building2,
-    type: 'item'
-  },
-];
 
 const secondaryNavigation: NavigationItem[] = [
   { name: 'Settings', href: '/settings', icon: Settings, type: 'item' },
@@ -113,6 +58,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   } | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<number | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    Companies: true,
     Projects: true,
     Issues: false,
     Reports: false,
@@ -121,7 +67,54 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { selectedCompany } = useCompany();
+  const { selectedProject } = useProject();
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Generate dynamic navigation based on context
+  const getDynamicNavigation = (): NavigationItem[] => {
+    const isCompanySelected = !!selectedCompany;
+    const isProjectSelected = !!selectedProject;
+    
+    const projectHref = selectedCompany 
+      ? `/companies/${selectedCompany.id}/projects`
+      : '/companies'; // Redirect to companies if no company selected
+      
+    const versionHref = selectedCompany && selectedProject
+      ? `/companies/${selectedCompany.id}/projects/${selectedProject.id}/versions`
+      : selectedCompany 
+        ? `/companies/${selectedCompany.id}/projects`  // Redirect to projects if no project selected
+        : '/companies'; // Redirect to companies if no company selected
+
+    return [
+      { 
+        name: 'Dashboard', 
+        href: '/dashboard', 
+        icon: Home,
+        type: 'item'
+      },
+      {
+        name: 'Companies',
+        icon: Building2,
+        type: 'section',
+        children: [
+          { name: 'Companies', href: '/companies', icon: Building2 },
+          { 
+            name: 'Projects', 
+            href: projectHref, 
+            icon: FolderOpen,
+            disabled: !isCompanySelected
+          },
+          { 
+            name: 'Versions', 
+            href: versionHref, 
+            icon: Tag,
+            disabled: !isCompanySelected || !isProjectSelected
+          },
+        ]
+      },
+    ];
+  };
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -416,7 +409,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-sm">
                 {hoveredSubmenu.items[0] && (
-                  React.createElement(navigation.find(nav => nav.name === hoveredSubmenu.title)?.icon || FolderOpen, {
+                  React.createElement(getDynamicNavigation().find(nav => nav.name === hoveredSubmenu.title)?.icon || FolderOpen, {
                     className: "w-4 h-4 text-white"
                   })
                 )}
@@ -513,7 +506,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <nav className={`space-y-1 transition-all duration-300 ${
             sidebarCollapsed ? 'px-1 py-4' : 'px-2 py-4'
           }`}>
-            {navigation.map((item) => {
+            {getDynamicNavigation().map((item) => {
               if (item.type === 'item') {
                 return (
                     <Link
@@ -619,31 +612,60 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   {/* Submenu for expanded sidebar */}
                   {!sidebarCollapsed && isExpanded && item.children && (
                     <div className="mt-2 space-y-1 ml-6 pl-4 border-l border-gray-200">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.name}
-                          to={child.href!}
-                          className={`nav-link ${
-                            isActive(child.href)
-                              ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-l-2 border-blue-500 shadow-sm'
-                              : 'text-gray-600 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 hover:text-gray-900 hover:border-l-2 hover:border-blue-300'
-                          } group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 focus:outline-none ml-2 mr-4`}
-                        >
-                          <div className={`w-6 h-6 rounded-md flex items-center justify-center mr-3 transition-all duration-200 ${
-                            isActive(child.href) 
-                              ? 'bg-blue-100 text-blue-600' 
-                              : 'bg-gray-100 text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600'
-                          }`}>
-                            <child.icon className="h-3.5 w-3.5" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium">{child.name}</div>
-                            {isActive(child.href) && (
-                              <div className="text-xs text-blue-600 mt-0.5 font-medium">Active</div>
-                            )}
-                          </div>
-                        </Link>
-                      ))}
+                      {item.children.map((child) => {
+                        const isChildActive = isActive(child.href);
+                        const isDisabled = child.disabled;
+                        
+                        if (isDisabled) {
+                          return (
+                            <div
+                              key={child.name}
+                              className="nav-link text-gray-400 group flex items-center px-3 py-2.5 text-sm rounded-lg cursor-not-allowed ml-2 mr-4"
+                              title={`${child.name} - ${
+                                child.name === 'Projects' 
+                                  ? 'Select a company first' 
+                                  : 'Select a company and project first'
+                              }`}
+                            >
+                              <div className="w-6 h-6 rounded-md flex items-center justify-center mr-3 bg-gray-50 text-gray-300">
+                                <child.icon className="h-3.5 w-3.5" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-medium">{child.name}</div>
+                                <div className="text-xs text-gray-400 mt-0.5">
+                                  {child.name === 'Projects' ? 'No company selected' : 'No project selected'}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <Link
+                            key={child.name}
+                            to={child.href!}
+                            className={`nav-link ${
+                              isChildActive
+                                ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-l-2 border-blue-500 shadow-sm'
+                                : 'text-gray-600 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 hover:text-gray-900 hover:border-l-2 hover:border-blue-300'
+                            } group flex items-center px-3 py-2.5 text-sm rounded-lg transition-all duration-200 focus:outline-none ml-2 mr-4`}
+                          >
+                            <div className={`w-6 h-6 rounded-md flex items-center justify-center mr-3 transition-all duration-200 ${
+                              isChildActive 
+                                ? 'bg-blue-100 text-blue-600' 
+                                : 'bg-gray-100 text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600'
+                            }`}>
+                              <child.icon className="h-3.5 w-3.5" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium">{child.name}</div>
+                              {isChildActive && (
+                                <div className="text-xs text-blue-600 mt-0.5 font-medium">Active</div>
+                              )}
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

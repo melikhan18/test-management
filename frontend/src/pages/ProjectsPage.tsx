@@ -83,6 +83,9 @@ export const ProjectsPage = () => {
       setShowCreateModal(false);
       setNewProject({ name: '', description: '' });
       await loadData();
+      
+      // Also refresh the project context to update header selector
+      await refreshProjects();
     } catch (err) {
       setError(formatErrorMessage(err));
     } finally {

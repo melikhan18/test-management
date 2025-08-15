@@ -32,7 +32,7 @@ type SortField = 'name' | 'memberCount' | 'createdAt' | 'updatedAt';
 type SortOrder = 'asc' | 'desc';
 
 export const CompaniesPage = () => {
-  const { selectedCompany, selectCompany } = useCompany();
+  const { selectedCompany, selectCompany, refreshCompanies } = useCompany();
   const [companies, setCompanies] = useState<UserCompany[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +78,9 @@ export const CompaniesPage = () => {
       setShowCreateModal(false);
       setNewCompany({ name: '' });
       await loadCompanies();
+      
+      // Also refresh the company context to update header selector
+      await refreshCompanies();
     } catch (err) {
       setError(formatErrorMessage(err));
     } finally {

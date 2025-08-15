@@ -74,11 +74,14 @@ export const ProjectProvider = ({ children }: { children: React.ReactNode }) => 
       console.log('Saved project:', savedProject);
       console.log('Fetched projects:', fetchedProjects);
       
+      let currentSelectedProject = null;
+      
       if (savedProject && savedProject.companyId === selectedCompany.id) {
         const stillExists = fetchedProjects.find((p: Project) => p.id === savedProject.id);
         console.log('Saved project still exists:', stillExists);
         
         if (stillExists) {
+          currentSelectedProject = stillExists;
           setSelectedProject(stillExists);
           saveProject(stillExists);
         } else {
@@ -92,8 +95,20 @@ export const ProjectProvider = ({ children }: { children: React.ReactNode }) => 
         console.log('Different company, clearing selection');
         setSelectedProject(null);
         saveProject(null);
+      } else if (!savedProject) {
+        // No saved project at all, clear selection
+        console.log('No saved project, clearing selection');
+        setSelectedProject(null);
+        saveProject(null);
       }
-      // Eğer saved project yoksa ve aynı company'deyse, seçimi koruyalım
+      
+      // If no project is selected and there are projects available, select the first one
+      if (!currentSelectedProject && fetchedProjects.length > 0) {
+        const firstProject = fetchedProjects[0];
+        console.log('No project selected, auto-selecting first project:', firstProject);
+        setSelectedProject(firstProject);
+        saveProject(firstProject);
+      }
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
       setError(errorMessage);
