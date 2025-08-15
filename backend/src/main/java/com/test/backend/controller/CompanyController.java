@@ -3,6 +3,8 @@ package com.test.backend.controller;
 import com.test.backend.dto.CompanyDto;
 import com.test.backend.dto.CompanyMemberDto;
 import com.test.backend.dto.CreateCompanyRequest;
+import com.test.backend.dto.UserCompanyDto;
+import com.test.backend.entity.CompanyRole;
 import com.test.backend.service.CompanyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -63,6 +65,22 @@ public class CompanyController {
     }
 
     @Operation(
+            summary = "Get User Companies with Roles",
+            description = "Get all companies where the authenticated user is a member with user's role information"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Companies with roles retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "User not authenticated"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/with-roles")
+    public ResponseEntity<List<UserCompanyDto>> getUserCompaniesWithRoles() {
+        String userEmail = getCurrentUserEmail();
+        List<UserCompanyDto> companies = companyService.getUserCompaniesWithRole(userEmail);
+        return ResponseEntity.ok(companies);
+    }
+
+    @Operation(
             summary = "Get Owned Companies",
             description = "Get all companies owned by the authenticated user"
     )
@@ -112,6 +130,24 @@ public class CompanyController {
         String userEmail = getCurrentUserEmail();
         List<CompanyMemberDto> members = companyService.getCompanyMembers(companyId, userEmail);
         return ResponseEntity.ok(members);
+    }
+
+    @Operation(
+            summary = "Get User Role in Company",
+            description = "Get the authenticated user's role in a specific company"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User role retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "User not authenticated"),
+            @ApiResponse(responseCode = "403", description = "Access denied to this company"),
+            @ApiResponse(responseCode = "404", description = "Company not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/{companyId}/my-role")
+    public ResponseEntity<CompanyRole> getUserRoleInCompany(@PathVariable Long companyId) {
+        String userEmail = getCurrentUserEmail();
+        CompanyRole role = companyService.getUserRoleInCompany(companyId, userEmail);
+        return ResponseEntity.ok(role);
     }
 
     @Operation(

@@ -9,7 +9,6 @@ import {
   Settings, 
   Menu, 
   X,
-  Bell,
   User,
   ChevronDown,
   HelpCircle,
@@ -26,7 +25,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAuth } from '../../contexts';
-import { CompanySelector } from '../common';
+import { CompanySelector, ProjectSelector, NotificationDropdown } from '../common';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -259,20 +258,17 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           
           {/* Header content */}
           <div className="flex-1 px-4 flex justify-between items-center">
-            <div className="flex-1">
-              {/* Page title could go here if needed */}
+            <div className="flex items-center space-x-4">
+              {/* Company Selector */}
+              <CompanySelector />
+              {/* Project Selector */}
+              <ProjectSelector />
             </div>
             
             {/* Right side icons */}
             <div className="flex items-center space-x-4">
-              {/* Company Selector */}
-              <CompanySelector />
-
               {/* Notifications */}
-              <button className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none transition-all duration-200 hover-lift">
-                <Bell className="h-6 w-6" />
-                <span className="absolute -mt-2 -mr-1 h-3 w-3 bg-red-500 rounded-full"></span>
-              </button>
+              <NotificationDropdown />
 
               {/* Profile dropdown */}
               <div className="relative" ref={userMenuRef}>
@@ -479,9 +475,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   function SidebarContent() {
     return (
       <div className="flex-1 flex flex-col min-h-0 bg-white border-r border-gray-200 shadow-lg">
-        {/* Logo and Collapse Button */}
-        <div className={`flex items-center justify-between h-16 flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-500 relative transition-all duration-300 ${
-          sidebarCollapsed ? 'px-2' : 'px-4'
+        {/* Logo */}
+        <div className={`flex items-center h-16 flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-500 transition-all duration-300 ${
+          sidebarCollapsed ? 'justify-center px-2' : 'px-4'
         }`}>
           <div className={`sidebar-element-transition ${
             sidebarCollapsed 
@@ -508,26 +504,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </div>
             )}
           </div>
-          
-          {!sidebarCollapsed && (
-            <button
-              onClick={toggleSidebarCollapse}
-              className="hidden lg:flex items-center justify-center w-8 h-8 text-blue-100 hover:text-white hover:bg-blue-500 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
-              title="Collapse sidebar"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          )}
-          
-          {sidebarCollapsed && (
-            <button
-              onClick={toggleSidebarCollapse}
-              className="collapse-button-positioned hidden lg:flex items-center justify-center w-6 h-6 text-blue-100 hover:text-white hover:bg-blue-500 rounded-md transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-blue-300 focus:ring-opacity-50"
-              title="Expand sidebar"
-            >
-              <ChevronRight className="w-3 h-3" />
-            </button>
-          )}
         </div>
         
         {/* Main Navigation - Scrollable */}

@@ -1,106 +1,103 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { companyService } from '../services';
 import { formatErrorMessage } from '../utils/helpers';
+import { useAuth } from './AuthContext';
 import type { Company } from '../types';
-
-// Company state interface
-interface CompanyState {
-  companies: Company[];
-  selectedCompany: Company | null;
-  isLoading: boolean;
-  error: string | null;
-}
-
-// Company actions
-type CompanyAction =
-  | { type: 'COMPANIES_LOADING' }
-  | { type: 'COMPANIES_SUCCESS'; payload: Company[] }
-  | { type: 'COMPANIES_ERROR'; payload: string }
-  | { type: 'SELECT_COMPANY'; payload: Company }
-  | { type: 'CLEAR_COMPANIES' };
 
 // Company context type
 interface CompanyContextType {
   companies: Company[];
   selectedCompany: Company | null;
+  userRoles: Record<number, string>;
   isLoading: boolean;
   error: string | null;
-  loadCompanies: () => Promise<void>;
   selectCompany: (company: Company) => void;
   refreshCompanies: () => Promise<void>;
-  clearCompanies: () => void;
+  getUserRole: (companyId: number) => Promise<string>;
 }
-
-// Initial state
-const initialState: CompanyState = {
-  companies: [],
-  selectedCompany: null,
-  isLoading: false,
-  error: null,
-};
-
-// Company reducer
-const companyReducer = (state: CompanyState, action: CompanyAction): CompanyState => {
-  switch (action.type) {
-    case 'COMPANIES_LOADING':
-      return {
-        ...state,
-        isLoading: true,
-        error: null,
-      };
-    case 'COMPANIES_SUCCESS':
-      return {
-        ...state,
-        companies: action.payload,
-        isLoading: false,
-        error: null,
-        // Auto-select first company if none selected
-        selectedCompany: state.selectedCompany || action.payload[0] || null,
-      };
-    case 'COMPANIES_ERROR':
-      return {
-        ...state,
-        companies: [],
-        isLoading: false,
-        error: action.payload,
-      };
-    case 'SELECT_COMPANY':
-      return {
-        ...state,
-        selectedCompany: action.payload,
-      };
-    case 'CLEAR_COMPANIES':
-      return initialState;
-    default:
-      return state;
-  }
-};
 
 // Create context
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
+// Helper function to get saved company from localStorage
+const getSavedCompany = (): Company | null => {
+  try {
+    const saved = localStorage.getItem('selectedCompany');
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+};
+
+// Helper function to save company to localStorage
+const saveCompany = (company: Company | null): void => {
+  if (company) {
+    localStorage.setItem('selectedCompany', JSON.stringify(company));
+  } else {
+    localStorage.removeItem('selectedCompany');
+  }
+};
+
 // Company provider component
 export const CompanyProvider = ({ children }: { children: React.ReactNode }) => {
-  const [state, dispatch] = useReducer(companyReducer, initialState);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(getSavedCompany());
+  const [userRoles, setUserRoles] = useState<Record<number, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
 
   // Load companies from API
   const loadCompanies = async (): Promise<void> => {
+    if (!isAuthenticated || !user) {
+      setCompanies([]);
+      setSelectedCompany(null);
+      saveCompany(null);
+      setUserRoles({});
+      return;
+    }
+
     try {
-      dispatch({ type: 'COMPANIES_LOADING' });
-      const companies = await companyService.getUserCompanies();
-      dispatch({ type: 'COMPANIES_SUCCESS', payload: companies });
+      setIsLoading(true);
+      setError(null);
+      
+      const fetchedCompanies = await companyService.getUserCompanies();
+      setCompanies(fetchedCompanies);
+
+      // Check if saved company still exists in the new list
+      const savedCompany = getSavedCompany();
+      
+      if (savedCompany) {
+        const stillExists = fetchedCompanies.find(c => c.id === savedCompany.id);
+        
+        if (stillExists) {
+          setSelectedCompany(stillExists);
+          saveCompany(stillExists);
+        } else {
+          // Saved company doesn't exist anymore, select first available
+          const firstCompany = fetchedCompanies[0] || null;
+          setSelectedCompany(firstCompany);
+          saveCompany(firstCompany);
+        }
+      } else {
+        // No saved company, select first one
+        const firstCompany = fetchedCompanies[0] || null;
+        setSelectedCompany(firstCompany);
+        saveCompany(firstCompany);
+      }
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
-      dispatch({ type: 'COMPANIES_ERROR', payload: errorMessage });
-      throw error;
+      setError(errorMessage);
+      console.error('Failed to load companies:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // Select a company
   const selectCompany = (company: Company): void => {
-    dispatch({ type: 'SELECT_COMPANY', payload: company });
-    // Store selected company in localStorage for persistence
-    localStorage.setItem('selectedCompany', JSON.stringify(company));
+    setSelectedCompany(company);
+    saveCompany(company);
   };
 
   // Refresh companies list
@@ -108,47 +105,57 @@ export const CompanyProvider = ({ children }: { children: React.ReactNode }) => 
     await loadCompanies();
   };
 
-  // Clear companies (on logout)
-  const clearCompanies = (): void => {
-    localStorage.removeItem('selectedCompany');
-    dispatch({ type: 'CLEAR_COMPANIES' });
+  // Get user role in company
+  const getUserRole = async (companyId: number): Promise<string> => {
+    if (!isAuthenticated || !user) {
+      return 'MEMBER';
+    }
+
+    // Check if role is already cached
+    if (userRoles[companyId]) {
+      return userRoles[companyId];
+    }
+
+    try {
+      const role = await companyService.getUserRoleInCompany(companyId);
+      setUserRoles(prev => ({ ...prev, [companyId]: role }));
+      return role;
+    } catch (error) {
+      console.error('Failed to get user role:', error);
+      return 'MEMBER';
+    }
   };
 
-  // Initialize companies on mount
+  // Load companies when user authentication changes
   useEffect(() => {
-    const initializeCompanies = async () => {
-      try {
-        // Load companies from API
-        await loadCompanies();
-        
-        // Try to restore previously selected company
-        const savedCompany = localStorage.getItem('selectedCompany');
-        if (savedCompany) {
-          try {
-            const parsedCompany = JSON.parse(savedCompany);
-            dispatch({ type: 'SELECT_COMPANY', payload: parsedCompany });
-          } catch (error) {
-            console.warn('Failed to parse saved company:', error);
-            localStorage.removeItem('selectedCompany');
-          }
-        }
-      } catch (error) {
-        console.error('Failed to initialize companies:', error);
-      }
-    };
+    if (isAuthenticated && user) {
+      loadCompanies();
+    }
+    // Sadece explicitly logout olduğunda temizle
+    // Page load sırasında auth henüz hazır olmayabilir
+  }, [isAuthenticated, user]);
 
-    initializeCompanies();
-  }, []);
+  // Sadece user null olduğunda (logout) temizle
+  useEffect(() => {
+    if (user === null && !authLoading) {
+      // Sadece loading tamamlandıktan sonra temizle
+      setCompanies([]);
+      setSelectedCompany(null);
+      saveCompany(null);
+      setUserRoles({});
+      setError(null);
+    }
+  }, [user, authLoading]);
 
   const contextValue: CompanyContextType = {
-    companies: state.companies,
-    selectedCompany: state.selectedCompany,
-    isLoading: state.isLoading,
-    error: state.error,
-    loadCompanies,
+    companies,
+    selectedCompany,
+    userRoles,
+    isLoading,
+    error,
     selectCompany,
     refreshCompanies,
-    clearCompanies,
+    getUserRole,
   };
 
   return (

@@ -32,6 +32,7 @@ export const LoginPage = () => {
 
     try {
       await login(formData);
+      // CompanyContext otomatik olarak companies'leri yükleyecek
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');

@@ -3,12 +3,15 @@ package com.test.backend.service;
 import com.test.backend.dto.CompanyDto;
 import com.test.backend.dto.CompanyMemberDto;
 import com.test.backend.dto.CreateCompanyRequest;
+import com.test.backend.dto.UserCompanyDto;
 import com.test.backend.entity.Company;
 import com.test.backend.entity.CompanyMember;
 import com.test.backend.entity.CompanyRole;
+import com.test.backend.entity.Project;
 import com.test.backend.entity.User;
 import com.test.backend.repository.CompanyMemberRepository;
 import com.test.backend.repository.CompanyRepository;
+import com.test.backend.repository.ProjectRepository;
 import com.test.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,9 @@ public class CompanyService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ProjectRepository projectRepository;
 
     /**
      * Create a new company with the user as owner.
@@ -74,6 +80,20 @@ public class CompanyService {
         
         return companyMembers.stream()
                 .map(cm -> convertToDto(cm.getCompany()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all companies where user is a member with user's role information.
+     */
+    public List<UserCompanyDto> getUserCompaniesWithRole(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<CompanyMember> companyMembers = companyMemberRepository.findByUser(user);
+        
+        return companyMembers.stream()
+                .map(cm -> convertToUserCompanyDto(cm.getCompany(), cm.getRole()))
                 .collect(Collectors.toList());
     }
 
@@ -132,6 +152,22 @@ public class CompanyService {
     }
 
     /**
+     * Get user's role in a specific company.
+     */
+    public CompanyRole getUserRoleInCompany(Long companyId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException("Company not found"));
+
+        CompanyMember companyMember = companyMemberRepository.findByUserAndCompany(user, company)
+                .orElseThrow(() -> new RuntimeException("User is not a member of this company"));
+
+        return companyMember.getRole();
+    }
+
+    /**
      * Update company name (only owner can do this).
      */
     @Transactional
@@ -161,6 +197,7 @@ public class CompanyService {
 
     /**
      * Soft delete company (only owner can do this).
+     * Also soft deletes all projects in the company.
      */
     @Transactional
     public void deleteCompany(Long companyId, String userEmail) {
@@ -175,6 +212,14 @@ public class CompanyService {
             throw new RuntimeException("Only company owner can delete company");
         }
 
+        // First, soft delete all projects in this company
+        List<Project> companyProjects = projectRepository.findByCompany(company);
+        for (Project project : companyProjects) {
+            project.markAsDeleted();
+        }
+        projectRepository.saveAll(companyProjects);
+
+        // Then, soft delete the company
         company.markAsDeleted();
         companyRepository.save(company);
     }
@@ -194,6 +239,25 @@ public class CompanyService {
                 company.getCreatedAt(),
                 company.getUpdatedAt(),
                 memberCount
+        );
+    }
+
+    /**
+     * Convert Company entity to UserCompanyDto with user's role.
+     */
+    private UserCompanyDto convertToUserCompanyDto(Company company, CompanyRole userRole) {
+        long memberCount = companyMemberRepository.countByCompany(company);
+        
+        return new UserCompanyDto(
+                company.getId(),
+                company.getName(),
+                company.getOwner().getId(),
+                company.getOwner().getUsername() + " " + company.getOwner().getSurname(),
+                company.getOwner().getEmail(),
+                company.getCreatedAt(),
+                company.getUpdatedAt(),
+                memberCount,
+                userRole
         );
     }
 

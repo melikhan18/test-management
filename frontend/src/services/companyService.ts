@@ -1,6 +1,6 @@
 import api from './api';
 import { API_ENDPOINTS } from '../utils/constants';
-import type { Company, CreateCompanyRequest, CompanyMember } from '../types';
+import type { Company, CreateCompanyRequest, CompanyMember, UserCompany } from '../types';
 
 /**
  * Company service for handling company-related operations
@@ -19,6 +19,14 @@ export const companyService = {
    */
   getUserCompanies: async (): Promise<Company[]> => {
     const response = await api.get<Company[]>(API_ENDPOINTS.COMPANIES.BASE);
+    return response.data;
+  },
+
+  /**
+   * Get all companies where user is a member with role information
+   */
+  getUserCompaniesWithRoles: async (): Promise<UserCompany[]> => {
+    const response = await api.get<UserCompany[]>(`${API_ENDPOINTS.COMPANIES.BASE}/with-roles`);
     return response.data;
   },
 
@@ -43,6 +51,14 @@ export const companyService = {
    */
   getCompanyMembers: async (companyId: number): Promise<CompanyMember[]> => {
     const response = await api.get<CompanyMember[]>(API_ENDPOINTS.COMPANIES.MEMBERS(companyId));
+    return response.data;
+  },
+
+  /**
+   * Get user's role in a specific company
+   */
+  getUserRoleInCompany: async (companyId: number): Promise<string> => {
+    const response = await api.get<string>(`${API_ENDPOINTS.COMPANIES.BASE}/${companyId}/my-role`);
     return response.data;
   },
 

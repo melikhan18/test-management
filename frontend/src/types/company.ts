@@ -10,6 +10,10 @@ export interface Company {
   memberCount: number;
 }
 
+export interface UserCompany extends Company {
+  userRole: CompanyRole; // User's role in this company
+}
+
 export interface CreateCompanyRequest {
   name: string;
 }
