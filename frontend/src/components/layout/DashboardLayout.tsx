@@ -18,7 +18,13 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAuth, useCompany, useProject, usePlatform } from '../../contexts';
-import { CompanySelector, ProjectSelector, PlatformSelector, VersionSelector, NotificationDropdown } from '../common';
+import { 
+  NotificationDropdown,
+  EnterpriseCompanySelector,
+  EnterpriseProjectSelector,
+  EnterprisePlatformSelector,
+  EnterpriseVersionSelector
+} from '../common';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -279,13 +285,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex-1 px-4 flex justify-between items-center">
             <div className="flex items-center space-x-4">
               {/* Company Selector */}
-              <CompanySelector />
+              <EnterpriseCompanySelector />
               {/* Project Selector */}
-              <ProjectSelector />
+              <EnterpriseProjectSelector />
               {/* Platform Selector */}
-              <PlatformSelector />
+              <EnterprisePlatformSelector />
               {/* Version Selector */}
-              <VersionSelector />
+              <EnterpriseVersionSelector />
             </div>
             
             {/* Right side icons */}
