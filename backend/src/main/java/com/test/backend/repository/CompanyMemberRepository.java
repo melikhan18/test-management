@@ -24,6 +24,12 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, Co
     List<CompanyMember> findByUser(User user);
     
     /**
+     * Find all active company members by user (excluding deleted companies).
+     */
+    @Query("SELECT cm FROM CompanyMember cm WHERE cm.user = :user AND cm.company.deletedAt IS NULL")
+    List<CompanyMember> findActiveCompaniesByUser(@Param("user") User user);
+    
+    /**
      * Find all company members by company.
      */
     List<CompanyMember> findByCompany(Company company);

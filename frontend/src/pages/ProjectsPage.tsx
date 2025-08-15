@@ -18,6 +18,7 @@ import {
   Building2
 } from 'lucide-react';
 import { DashboardLayout } from '../components/layout';
+import { ConfirmDeleteModal } from '../components/common';
 import { projectService, companyService } from '../services';
 import { formatErrorMessage } from '../utils/helpers';
 import type { Project, CreateProjectRequest, Company } from '../types';
@@ -38,6 +39,9 @@ export const ProjectsPage = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedProjectForDelete, setSelectedProjectForDelete] = useState<Project | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [newProject, setNewProject] = useState<CreateProjectRequest>({ name: '', description: '' });
   const [isCreating, setIsCreating] = useState(false);
 
@@ -81,6 +85,27 @@ export const ProjectsPage = () => {
       setError(formatErrorMessage(err));
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleDeleteProject = (project: Project) => {
+    setSelectedProjectForDelete(project);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteProject = async () => {
+    if (!selectedProjectForDelete || !companyId) return;
+
+    try {
+      setIsDeleting(true);
+      await projectService.deleteProject(parseInt(companyId), selectedProjectForDelete.id);
+      setShowDeleteModal(false);
+      setSelectedProjectForDelete(null);
+      await loadData();
+    } catch (err) {
+      setError(formatErrorMessage(err));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -379,7 +404,10 @@ export const ProjectsPage = () => {
                           <button className="p-2 text-gray-400 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200">
                             <Settings className="w-4 h-4" />
                           </button>
-                          <button className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all duration-200">
+                          <button 
+                            onClick={() => handleDeleteProject(project)}
+                            className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all duration-200"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -426,7 +454,10 @@ export const ProjectsPage = () => {
                             <button className="p-2 text-gray-400 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200">
                               <Settings className="w-4 h-4" />
                             </button>
-                            <button className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all duration-200">
+                            <button 
+                              onClick={() => handleDeleteProject(project)}
+                              className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all duration-200"
+                            >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -505,6 +536,23 @@ export const ProjectsPage = () => {
               </form>
             </div>
           </div>
+        )}
+
+        {/* Delete Modal */}
+        {showDeleteModal && selectedProjectForDelete && (
+          <ConfirmDeleteModal
+            isOpen={showDeleteModal}
+            onClose={() => {
+              setShowDeleteModal(false);
+              setSelectedProjectForDelete(null);
+            }}
+            onConfirm={confirmDeleteProject}
+            title="Delete Project"
+            message={`Are you sure you want to delete the project "${selectedProjectForDelete.name}"? This action cannot be undone.`}
+            confirmText={`Type "${selectedProjectForDelete.name}" to confirm`}
+            itemName={selectedProjectForDelete.name}
+            isLoading={isDeleting}
+          />
         )}
       </div>
     </DashboardLayout>

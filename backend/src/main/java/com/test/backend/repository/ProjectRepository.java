@@ -41,6 +41,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     boolean existsByNameAndCompany(@Param("name") String name, @Param("company") Company company);
     
     /**
+     * Check if project name exists globally (among active projects).
+     */
+    @Query("SELECT COUNT(p) > 0 FROM Project p WHERE p.name = :name AND p.deletedAt IS NULL")
+    boolean existsByNameAndNotDeleted(@Param("name") String name);
+    
+    /**
      * Count active projects for a company.
      */
     @Query("SELECT COUNT(p) FROM Project p WHERE p.company = :company AND p.deletedAt IS NULL")

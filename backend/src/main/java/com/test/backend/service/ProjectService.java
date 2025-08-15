@@ -52,9 +52,9 @@ public class ProjectService {
             throw new RuntimeException("Access denied. Only company owners and admins can create projects.");
         }
 
-        // Check if project name already exists in this company
-        if (projectRepository.existsByNameAndCompany(request.getName(), company)) {
-            throw new RuntimeException("A project with this name already exists in the company");
+        // Check if project name already exists globally
+        if (projectRepository.existsByNameAndNotDeleted(request.getName())) {
+            throw new RuntimeException("A project with this name already exists");
         }
 
         // Create project

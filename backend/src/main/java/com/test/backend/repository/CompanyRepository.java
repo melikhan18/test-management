@@ -32,6 +32,18 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     boolean existsByNameAndOwner(String name, User owner);
     
     /**
+     * Check if company name exists globally (among active companies).
+     */
+    @Query("SELECT COUNT(c) > 0 FROM Company c WHERE c.name = :name AND c.deletedAt IS NULL")
+    boolean existsByNameAndNotDeleted(@Param("name") String name);
+    
+    /**
+     * Check if company name exists for a specific owner (among active companies).
+     */
+    @Query("SELECT COUNT(c) > 0 FROM Company c WHERE c.name = :name AND c.owner = :owner AND c.deletedAt IS NULL")
+    boolean existsActiveByNameAndOwner(@Param("name") String name, @Param("owner") User owner);
+    
+    /**
      * Find company by name and owner.
      */
     Optional<Company> findByNameAndOwner(String name, User owner);

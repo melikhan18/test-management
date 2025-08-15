@@ -47,9 +47,9 @@ public class CompanyService {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Check if company name already exists for this user
-        if (companyRepository.existsByNameAndOwner(request.getName(), user)) {
-            throw new RuntimeException("Company with this name already exists for this user");
+        // Check if company name already exists globally
+        if (companyRepository.existsByNameAndNotDeleted(request.getName())) {
+            throw new RuntimeException("Company with this name already exists");
         }
 
         // Create company
@@ -76,7 +76,7 @@ public class CompanyService {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<CompanyMember> companyMembers = companyMemberRepository.findByUser(user);
+        List<CompanyMember> companyMembers = companyMemberRepository.findActiveCompaniesByUser(user);
         
         return companyMembers.stream()
                 .map(cm -> convertToDto(cm.getCompany()))
@@ -90,7 +90,7 @@ public class CompanyService {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<CompanyMember> companyMembers = companyMemberRepository.findByUser(user);
+        List<CompanyMember> companyMembers = companyMemberRepository.findActiveCompaniesByUser(user);
         
         return companyMembers.stream()
                 .map(cm -> convertToUserCompanyDto(cm.getCompany(), cm.getRole()))
@@ -120,6 +120,11 @@ public class CompanyService {
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new RuntimeException("Company not found"));
+
+        // Check if company is deleted
+        if (company.isDeleted()) {
+            throw new RuntimeException("Company not found");
+        }
 
         // Check if user is member of this company
         if (!companyMemberRepository.existsByUserAndCompany(user, company)) {
