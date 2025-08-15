@@ -81,7 +81,6 @@ export const VersionProvider: React.FC<VersionProviderProps> = ({ children }) =>
     // If no version is selected and there are versions available, select the first one
     if (!currentSelectedVersion && newVersions.length > 0 && selectedProject) {
       const firstVersion = newVersions[0];
-      console.log('No version selected, auto-selecting first version:', firstVersion);
       setSelectedVersionState(firstVersion);
       localStorage.setItem('selectedVersion', JSON.stringify(firstVersion));
     }

@@ -49,10 +49,7 @@ export const ProjectProvider = ({ children }: { children: React.ReactNode }) => 
 
   // Load projects from API
   const loadProjects = async (): Promise<void> => {
-    console.log('loadProjects called - selectedCompany:', selectedCompany, 'isAuthenticated:', isAuthenticated);
-    
     if (!isAuthenticated || !user || !selectedCompany) {
-      console.log('No auth/company, skipping project loading');
       // Sadece explicit olarak company değiştiğinde temizle, auth loading sırasında değil
       if (!selectedCompany && isAuthenticated && user) {
         setProjects([]);
@@ -71,14 +68,11 @@ export const ProjectProvider = ({ children }: { children: React.ReactNode }) => 
 
       // Check if saved project still exists in the new list and belongs to current company
       const savedProject = getSavedProject();
-      console.log('Saved project:', savedProject);
-      console.log('Fetched projects:', fetchedProjects);
       
       let currentSelectedProject = null;
       
       if (savedProject && savedProject.companyId === selectedCompany.id) {
         const stillExists = fetchedProjects.find((p: Project) => p.id === savedProject.id);
-        console.log('Saved project still exists:', stillExists);
         
         if (stillExists) {
           currentSelectedProject = stillExists;
@@ -86,18 +80,15 @@ export const ProjectProvider = ({ children }: { children: React.ReactNode }) => 
           saveProject(stillExists);
         } else {
           // Saved project doesn't exist anymore, clear selection
-          console.log('Saved project not found, clearing selection');
           setSelectedProject(null);
           saveProject(null);
         }
       } else if (savedProject && savedProject.companyId !== selectedCompany.id) {
         // Different company, clear selection
-        console.log('Different company, clearing selection');
         setSelectedProject(null);
         saveProject(null);
       } else if (!savedProject) {
         // No saved project at all, clear selection
-        console.log('No saved project, clearing selection');
         setSelectedProject(null);
         saveProject(null);
       }
@@ -105,7 +96,6 @@ export const ProjectProvider = ({ children }: { children: React.ReactNode }) => 
       // If no project is selected and there are projects available, select the first one
       if (!currentSelectedProject && fetchedProjects.length > 0) {
         const firstProject = fetchedProjects[0];
-        console.log('No project selected, auto-selecting first project:', firstProject);
         setSelectedProject(firstProject);
         saveProject(firstProject);
       }
@@ -146,7 +136,6 @@ export const ProjectProvider = ({ children }: { children: React.ReactNode }) => 
   // Sadece explicit logout olduğunda temizle
   useEffect(() => {
     if (user === null && !authLoading) {
-      console.log('User logged out, clearing projects');
       setProjects([]);
       setSelectedProject(null);
       saveProject(null);

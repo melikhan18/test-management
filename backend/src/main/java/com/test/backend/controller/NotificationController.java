@@ -90,9 +90,7 @@ public class NotificationController {
     @PutMapping("/{notificationId}/read")
     public ResponseEntity<NotificationDto> markAsRead(@PathVariable Long notificationId) {
         String userEmail = getCurrentUserEmail();
-        System.out.println("Marking notification as read - ID: " + notificationId + ", User: " + userEmail);
         NotificationDto notification = notificationService.markAsRead(notificationId, userEmail);
-        System.out.println("Notification marked as read: " + notification.isRead());
         return ResponseEntity.ok(notification);
     }
 

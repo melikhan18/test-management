@@ -58,9 +58,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     
     try {
       setIsLoading(true);
-      console.log('Loading notifications from backend...');
       const data = await notificationService.getNotifications();
-      console.log('Loaded notifications:', data);
       setNotifications(data);
     } catch (error) {
       console.error('Failed to load notifications:', formatErrorMessage(error));
@@ -82,9 +80,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const markAsRead = async (notificationId: number): Promise<void> => {
     try {
-      console.log('Marking notification as read:', notificationId);
       const updatedNotification = await notificationService.markAsRead(notificationId);
-      console.log('Backend response:', updatedNotification);
       
       // Update local state with backend response
       setNotifications(prev => 
@@ -100,8 +96,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       if (wasUnread) {
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
-      
-      console.log('Updated notification state successfully');
     } catch (error) {
       console.error('Failed to mark notification as read:', formatErrorMessage(error));
       // Reload notifications on error to ensure consistency

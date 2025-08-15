@@ -58,12 +58,6 @@ public class NotificationService {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
                 
-        System.out.println("Getting notifications for user: " + userEmail);
-        System.out.println("Found " + dtos.size() + " notifications:");
-        for (NotificationDto dto : dtos) {
-            System.out.println("  - ID: " + dto.getId() + ", isRead: " + dto.isRead() + ", readAt: " + dto.getReadAt());
-        }
-        
         return dtos;
     }
 
@@ -175,11 +169,6 @@ public class NotificationService {
                 notification.getCreatedAt(),
                 notification.getReadAt()
         );
-        
-        System.out.println("Converting notification to DTO - ID: " + notification.getId() + 
-                          ", Entity isRead: " + notification.getIsRead() + 
-                          ", DTO isRead: " + dto.isRead() +
-                          ", Entity readAt: " + notification.getReadAt());
         
         return dto;
     }

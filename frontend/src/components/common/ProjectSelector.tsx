@@ -23,10 +23,8 @@ export const ProjectSelector = () => {
   }, []);
 
   const handleProjectSelect = (project: Project) => {
-    console.log('ProjectSelector - Manual selection:', project);
     selectProject(project);
     setIsOpen(false);
-    console.log('ProjectSelector - After selection, localStorage:', localStorage.getItem('selectedProject'));
   };
 
   if (isLoading) {

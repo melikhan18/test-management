@@ -10,19 +10,6 @@ export const notificationService = {
    */
   getNotifications: async (): Promise<Notification[]> => {
     const response = await api.get<Notification[]>('/api/v1/notifications');
-    console.log('Raw notification response from backend:', response.data);
-    
-    // Log each notification's isRead status
-    response.data.forEach((notif: any, index: number) => {
-      console.log(`Notification ${index + 1}:`, {
-        id: notif.id,
-        title: notif.title,
-        isRead: notif.isRead,
-        isReadType: typeof notif.isRead,
-        readAt: notif.readAt
-      });
-    });
-    
     return response.data;
   },
 

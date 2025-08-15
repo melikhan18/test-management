@@ -73,9 +73,7 @@ export const NotificationDropdown = () => {
       if (!token) {
         throw new Error('Invalid action URL format');
       }
-      console.log('Accepting invitation with token:', token);
       await invitationService.acceptInvitation(token);
-      console.log('Invitation accepted successfully');
       
       // Remove the notification from local state immediately for better UX
       removeInvitationNotification(token);
@@ -96,9 +94,7 @@ export const NotificationDropdown = () => {
       if (!token) {
         throw new Error('Invalid action URL format');
       }
-      console.log('Rejecting invitation with token:', token);
       await invitationService.rejectInvitation(token);
-      console.log('Invitation rejected successfully');
       
       // Remove the notification from local state immediately for better UX
       removeInvitationNotification(token);
