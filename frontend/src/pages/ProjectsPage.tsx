@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   FolderOpen, 
   Plus, 
@@ -14,27 +14,22 @@ import {
   List,
   SortAsc,
   SortDesc,
-  ArrowLeft,
   Building2
 } from 'lucide-react';
 import { DashboardLayout } from '../components/layout';
 import { ConfirmDeleteModal } from '../components/common';
-import { projectService, companyService } from '../services';
-import { formatErrorMessage } from '../utils/helpers';
-import { useProject } from '../contexts';
-import type { Project, CreateProjectRequest, Company } from '../types';
+import { projectService } from '../services';
+import { useProject, useCompany } from '../contexts';
+import type { Project, CreateProjectRequest } from '../types';
 
 type ViewMode = 'grid' | 'list';
 type SortField = 'name' | 'createdAt' | 'updatedAt';
 type SortOrder = 'asc' | 'desc';
 
 export const ProjectsPage = () => {
-  const { companyId } = useParams<{ companyId: string }>();
-  const { selectedProject, clearSelectedProject, refreshProjects } = useProject();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [company, setCompany] = useState<Company | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { selectedCompany } = useCompany();
+  const { projects, isLoading, error, refreshProjects, selectedProject, clearSelectedProject, selectProject } = useProject();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortField, setSortField] = useState<SortField>('updatedAt');
@@ -47,47 +42,20 @@ export const ProjectsPage = () => {
   const [newProject, setNewProject] = useState<CreateProjectRequest>({ name: '', description: '' });
   const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    if (companyId) {
-      loadData();
-    }
-  }, [companyId]);
-
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const companyIdNum = parseInt(companyId!);
-      const [companyData, projectsData] = await Promise.all([
-        companyService.getCompany(companyIdNum),
-        projectService.getCompanyProjects(companyIdNum)
-      ]);
-      
-      setCompany(companyData);
-      setProjects(projectsData);
-    } catch (err) {
-      setError(formatErrorMessage(err));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProject.name.trim() || !companyId) return;
+    if (!newProject.name.trim() || !selectedCompany) return;
 
     try {
       setIsCreating(true);
-      await projectService.createProject(parseInt(companyId), newProject);
+      await projectService.createProject(selectedCompany.id, newProject);
       setShowCreateModal(false);
       setNewProject({ name: '', description: '' });
-      await loadData();
       
-      // Also refresh the project context to update header selector
+      // Refresh the project context to update both the list and header selector
       await refreshProjects();
     } catch (err) {
-      setError(formatErrorMessage(err));
+      console.error('Error creating project:', err);
     } finally {
       setIsCreating(false);
     }
@@ -99,11 +67,11 @@ export const ProjectsPage = () => {
   };
 
   const confirmDeleteProject = async () => {
-    if (!selectedProjectForDelete || !companyId) return;
+    if (!selectedProjectForDelete || !selectedCompany) return;
 
     try {
       setIsDeleting(true);
-      await projectService.deleteProject(parseInt(companyId), selectedProjectForDelete.id);
+      await projectService.deleteProject(selectedCompany.id, selectedProjectForDelete.id);
       
       // If the deleted project is currently selected, clear the selection
       if (selectedProject && selectedProject.id === selectedProjectForDelete.id) {
@@ -112,12 +80,11 @@ export const ProjectsPage = () => {
       
       setShowDeleteModal(false);
       setSelectedProjectForDelete(null);
-      await loadData();
       
-      // Also refresh the project context
+      // Refresh the project context to update the list
       await refreshProjects();
     } catch (err) {
-      setError(formatErrorMessage(err));
+      console.error('Error deleting project:', err);
     } finally {
       setIsDeleting(false);
     }
@@ -182,13 +149,15 @@ export const ProjectsPage = () => {
     return formatDate(dateString);
   };
 
-  if (isLoading) {
+  if (isLoading || !selectedCompany) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading projects...</p>
+            <p className="text-gray-500">
+              {!selectedCompany ? 'Please select a company first...' : 'Loading projects...'}
+            </p>
           </div>
         </div>
       </DashboardLayout>
@@ -202,27 +171,21 @@ export const ProjectsPage = () => {
         <div className="md:flex md:items-center md:justify-between mb-8">
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-3">
-              <Link
-                to="/companies"
-                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all duration-200"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                 <FolderOpen className="w-6 h-6 text-white" />
               </div>
               <div>
                 <div className="flex items-center space-x-2">
                   <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-                  {company && (
+                  {selectedCompany && (
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       <Building2 className="w-3 h-3 mr-1" />
-                      {company.name}
+                      {selectedCompany.name}
                     </span>
                   )}
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
-                  Manage projects in {company?.name || 'this company'}
+                  Manage projects in {selectedCompany?.name || 'this company'}
                 </p>
               </div>
             </div>
@@ -407,13 +370,16 @@ export const ProjectsPage = () => {
                     {/* Card Actions */}
                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
                       <div className="flex items-center justify-between">
-                        <Link
-                          to={`/companies/${companyId}/projects/${project.id}/platforms`}
+                        <button
+                          onClick={() => {
+                            selectProject(project);
+                            navigate('/platforms');
+                          }}
                           className="inline-flex items-center text-sm font-medium text-purple-600 hover:text-purple-700"
                         >
                           <Eye className="w-4 h-4 mr-1" />
                           View Platforms
-                        </Link>
+                        </button>
                         <div className="flex items-center space-x-2">
                           <button className="p-2 text-gray-400 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200">
                             <Settings className="w-4 h-4" />
@@ -457,13 +423,16 @@ export const ProjectsPage = () => {
                           </div>
                         </div>
                         <div className="flex items-center space-x-3 ml-4">
-                          <Link
-                            to={`/companies/${companyId}/projects/${project.id}/platforms`}
+                          <button
+                            onClick={() => {
+                              selectProject(project);
+                              navigate('/platforms');
+                            }}
                             className="inline-flex items-center px-3 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-all duration-200"
                           >
                             <Eye className="w-4 h-4 mr-2" />
                             View Platforms
-                          </Link>
+                          </button>
                           <div className="flex items-center space-x-2">
                             <button className="p-2 text-gray-400 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200">
                               <Settings className="w-4 h-4" />
@@ -492,7 +461,7 @@ export const ProjectsPage = () => {
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">Create New Project</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  Create a new project in {company?.name}
+                  Create a new project in {selectedCompany?.name}
                 </p>
               </div>
               

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
 import { 
   Tag, 
   Plus, 
@@ -14,15 +13,11 @@ import {
   List,
   SortAsc,
   SortDesc,
-  ArrowLeft,
-  Building2,
-  FolderOpen,
-  Loader2
+  FolderOpen
 } from 'lucide-react';
 import { DashboardLayout } from '../components';
 import { ConfirmDeleteModal } from '../components/common';
 import { versionService } from '../services';
-import { formatErrorMessage } from '../utils/helpers';
 import { useCompany, useProject, useVersion, usePlatform } from '../contexts';
 import type { Version, CreateVersionRequest } from '../types';
 
@@ -31,15 +26,11 @@ type SortField = 'versionName' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 
 const VersionsPage: React.FC = () => {
-  const { companyId, projectId } = useParams<{ companyId: string; projectId: string }>();
   const { selectedCompany } = useCompany();
   const { selectedProject } = useProject();
   const { selectedPlatform } = usePlatform();
-  const { selectedVersion, setSelectedVersion, setVersions: setContextVersions } = useVersion();
+  const { versions, isLoading, loadVersions, selectedVersion, setSelectedVersion } = useVersion();
   
-  const [versions, setVersions] = useState<Version[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -51,41 +42,37 @@ const VersionsPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [newVersion, setNewVersion] = useState<CreateVersionRequest>({ versionName: '' });
   const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (companyId && projectId && selectedPlatform) {
-      loadData();
+    if (!selectedCompany) {
+      // navigate('/companies'); // Can be added if needed
+      return;
     }
-  }, [companyId, projectId, selectedPlatform]);
-
-  const loadData = async () => {
-    if (!companyId || !projectId || !selectedPlatform) return;
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      const versionData = await versionService.getVersions(parseInt(companyId), parseInt(projectId), selectedPlatform.id);
-      setVersions(versionData);
-      setContextVersions(versionData); // Update context versions as well
-    } catch (err) {
-      setError(formatErrorMessage(err));
-    } finally {
-      setIsLoading(false);
+    
+    if (!selectedProject) {
+      // navigate('/projects'); // Can be added if needed
+      return;
     }
-  };
+    
+    if (!selectedPlatform) {
+      // navigate('/platforms'); // Can be added if needed
+      return;
+    }
+  }, [selectedCompany, selectedProject, selectedPlatform]);
 
   const handleCreateVersion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newVersion.versionName.trim() || !companyId || !projectId || !selectedPlatform) return;
+    if (!newVersion.versionName.trim() || !selectedCompany || !selectedProject || !selectedPlatform) return;
 
     try {
       setIsCreating(true);
-      await versionService.createVersion(parseInt(companyId), parseInt(projectId), selectedPlatform.id, newVersion);
+      await versionService.createVersion(selectedCompany.id, selectedProject.id, selectedPlatform.id, newVersion);
       setShowCreateModal(false);
       setNewVersion({ versionName: '' });
-      await loadData();
+      await loadVersions();
     } catch (err) {
-      setError(formatErrorMessage(err));
+      setError('Failed to create version');
     } finally {
       setIsCreating(false);
     }
@@ -97,11 +84,11 @@ const VersionsPage: React.FC = () => {
   };
 
   const confirmDeleteVersion = async () => {
-    if (!selectedVersionForDelete || !companyId || !projectId || !selectedPlatform) return;
+    if (!selectedVersionForDelete || !selectedCompany || !selectedProject || !selectedPlatform) return;
 
     try {
       setIsDeleting(true);
-      await versionService.deleteVersion(parseInt(companyId), parseInt(projectId), selectedPlatform.id, selectedVersionForDelete.id);
+      await versionService.deleteVersion(selectedCompany.id, selectedProject.id, selectedPlatform.id, selectedVersionForDelete.id);
       
       // If the deleted version is currently selected, clear the selection
       if (selectedVersion && selectedVersion.id === selectedVersionForDelete.id) {
@@ -110,9 +97,9 @@ const VersionsPage: React.FC = () => {
       
       setShowDeleteModal(false);
       setSelectedVersionForDelete(null);
-      await loadData();
+      await loadVersions();
     } catch (err) {
-      setError(formatErrorMessage(err));
+      setError('Failed to delete version');
     } finally {
       setIsDeleting(false);
     }
@@ -194,12 +181,6 @@ const VersionsPage: React.FC = () => {
         <div className="md:flex md:items-center md:justify-between mb-8">
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-3">
-              <Link
-                to={`/companies/${companyId}/projects`}
-                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all duration-200"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
               <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Tag className="w-6 h-6 text-white" />
               </div>

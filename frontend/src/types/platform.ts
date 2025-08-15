@@ -39,4 +39,5 @@ export interface PlatformContextType {
   setPlatforms: (platforms: Platform[]) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
+  loadPlatforms: () => Promise<void>;
 }

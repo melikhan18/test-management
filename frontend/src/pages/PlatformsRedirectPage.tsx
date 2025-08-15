@@ -11,9 +11,9 @@ const PlatformsRedirectPage: React.FC = () => {
     if (!selectedCompany) {
       navigate('/companies');
     } else if (!selectedProject) {
-      navigate(`/companies/${selectedCompany.id}/projects`);
+      navigate('/projects');
     } else {
-      navigate(`/companies/${selectedCompany.id}/projects/${selectedProject.id}/platforms`);
+      navigate(`/projects/${selectedProject.id}/platforms`);
     }
   }, [selectedCompany, selectedProject, navigate]);
 

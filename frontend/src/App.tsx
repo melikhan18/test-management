@@ -2,7 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, CompanyProvider, NotificationProvider, ProjectProvider, PlatformProvider, VersionProvider } from './contexts';
 import { ProtectedRoute, PublicRoute } from './components';
-import { LoginPage, RegisterPage, DashboardPage, CompaniesPage, ProjectsPage, PlatformsPage, PlatformsRedirectPage, VersionsPage, ProjectsRedirectPage, VersionsRedirectPage } from './pages';
+import { LoginPage, RegisterPage, DashboardPage, CompaniesPage, ProjectsPage, PlatformsPage, VersionsPage } from './pages';
 
 function App() {
   return (
@@ -50,31 +50,7 @@ function App() {
                   } 
                 />
                 <Route 
-                  path="/platforms" 
-                  element={
-                    <ProtectedRoute>
-                      <PlatformsRedirectPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
                   path="/projects" 
-                  element={
-                    <ProtectedRoute>
-                      <ProjectsRedirectPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/versions" 
-                  element={
-                    <ProtectedRoute>
-                      <VersionsRedirectPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/companies/:companyId/projects" 
                   element={
                     <ProtectedRoute>
                       <ProjectsPage />
@@ -82,10 +58,50 @@ function App() {
                   } 
                 />
                 <Route 
-                  path="/companies/:companyId/projects/:projectId/platforms" 
+                  path="/platforms" 
                   element={
                     <ProtectedRoute>
                       <PlatformsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/versions" 
+                  element={
+                    <ProtectedRoute>
+                      <VersionsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/projects/:projectId/platforms" 
+                  element={
+                    <ProtectedRoute>
+                      <PlatformsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/projects/:projectId/platforms/:platformId/versions" 
+                  element={
+                    <ProtectedRoute>
+                      <VersionsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/companies/:companyId/projects" 
+                  element={
+                    <ProtectedRoute>
+                      <Navigate to="/projects" replace />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/companies/:companyId/projects/:projectId/platforms" 
+                  element={
+                    <ProtectedRoute>
+                      <Navigate to="/platforms" replace />
                     </ProtectedRoute>
                   } 
                 />

@@ -66,7 +66,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     platforms,
     setPlatforms: handleSetPlatforms,
     isLoading,
-    setIsLoading
+    setIsLoading,
+    loadPlatforms
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -34,11 +34,11 @@ interface CreatePlatformModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (platform: Platform) => void;
-  companyId: number;
   projectId: number;
 }
 
-const CreatePlatformModal: React.FC<CreatePlatformModalProps> = ({ isOpen, onClose, onSuccess, companyId, projectId }) => {
+const CreatePlatformModal: React.FC<CreatePlatformModalProps> = ({ isOpen, onClose, onSuccess, projectId }) => {
+  const { selectedCompany } = useCompany();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -46,6 +46,8 @@ const CreatePlatformModal: React.FC<CreatePlatformModalProps> = ({ isOpen, onClo
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (!selectedCompany) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +57,7 @@ const CreatePlatformModal: React.FC<CreatePlatformModalProps> = ({ isOpen, onClo
     setError(null);
 
     try {
-      const platform = await platformService.createPlatform(companyId, projectId, formData);
+      const platform = await platformService.createPlatform(selectedCompany!.id, projectId, formData);
       onSuccess(platform);
       setFormData({ name: '', description: '', platformType: 'WEB' });
       onClose();
@@ -165,11 +167,10 @@ const CreatePlatformModal: React.FC<CreatePlatformModalProps> = ({ isOpen, onClo
 };
 
 const PlatformsPage: React.FC = () => {
-  const { companyId, projectId } = useParams<{ companyId: string; projectId: string }>();
   const navigate = useNavigate();
   const { selectedCompany } = useCompany();
   const { selectedProject } = useProject();
-  const { platforms, setPlatforms, isLoading } = usePlatform();
+  const { platforms, isLoading, loadPlatforms, setSelectedPlatform } = usePlatform();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -182,41 +183,31 @@ const PlatformsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!companyId || !projectId) {
-      navigate('/dashboard');
+    if (!selectedCompany) {
+      navigate('/companies');
       return;
     }
-
-    loadPlatforms();
-  }, [companyId, projectId, navigate]);
-
-  const loadPlatforms = async () => {
-    if (!companyId || !projectId) return;
-
-    try {
-      setError(null);
-      const platformData = await platformService.getPlatforms(Number(companyId), Number(projectId));
-      setPlatforms(Array.isArray(platformData) ? platformData : []);
-    } catch (err) {
-      setError(formatErrorMessage(err));
-      setPlatforms([]);
+    
+    if (!selectedProject) {
+      navigate('/projects');
+      return;
     }
-  };
+  }, [selectedCompany, selectedProject, navigate]);
 
-  const handleCreateSuccess = (newPlatform: Platform) => {
-    setPlatforms([...platforms, newPlatform]);
+  const handleCreateSuccess = (_newPlatform: Platform) => {
+    loadPlatforms();
   };
 
   const handleDeletePlatform = async () => {
-    if (!platformToDelete || !companyId || !projectId) return;
+    if (!platformToDelete || !selectedCompany || !selectedProject) return;
 
     try {
-      await platformService.deletePlatform(Number(companyId), Number(projectId), platformToDelete.id);
-      setPlatforms(platforms.filter(p => p.id !== platformToDelete.id));
+      await platformService.deletePlatform(selectedCompany.id, selectedProject.id, platformToDelete.id);
+      loadPlatforms();
       setShowDeleteModal(false);
       setPlatformToDelete(null);
     } catch (err) {
-      setError(formatErrorMessage(err));
+      setError('Failed to delete platform');
     }
   };
 
@@ -569,7 +560,10 @@ const PlatformsPage: React.FC = () => {
                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
                       <div className="flex items-center justify-between">
                         <button
-                          onClick={() => navigate(`/companies/${companyId}/projects/${projectId}/platforms/${platform.id}/versions`)}
+                          onClick={() => {
+                            setSelectedPlatform(platform);
+                            navigate('/versions');
+                          }}
                           className="inline-flex items-center text-sm font-medium text-green-600 hover:text-green-700"
                         >
                           <Eye className="w-4 h-4 mr-1" />
@@ -625,7 +619,10 @@ const PlatformsPage: React.FC = () => {
                         </div>
                         <div className="flex items-center space-x-3 ml-4">
                           <button
-                            onClick={() => navigate(`/companies/${companyId}/projects/${projectId}/platforms/${platform.id}/versions`)}
+                            onClick={() => {
+                              setSelectedPlatform(platform);
+                              navigate('/versions');
+                            }}
                             className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-600 hover:text-green-700 border border-green-200 rounded-lg hover:bg-green-50 transition-all duration-200"
                           >
                             <Eye className="w-4 h-4 mr-2" />
@@ -656,13 +653,12 @@ const PlatformsPage: React.FC = () => {
         )}
 
         {/* Create Platform Modal */}
-        {showCreateModal && (
+        {showCreateModal && selectedProject && (
           <CreatePlatformModal
             isOpen={showCreateModal}
             onClose={() => setShowCreateModal(false)}
             onSuccess={handleCreateSuccess}
-            companyId={Number(companyId)}
-            projectId={Number(projectId)}
+            projectId={selectedProject.id}
           />
         )}
 

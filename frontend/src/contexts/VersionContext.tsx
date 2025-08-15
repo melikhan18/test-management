@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { usePlatform } from './PlatformContext';
+import { useCompany } from './CompanyContext';
+import { useProject } from './ProjectContext';
+import { versionService } from '../services';
 import type { Version, VersionContextType } from '../types';
 
 const VersionContext = createContext<VersionContextType | undefined>(undefined);
@@ -21,6 +24,40 @@ export const VersionProvider: React.FC<VersionProviderProps> = ({ children }) =>
   const [versions, setVersionsState] = useState<Version[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { selectedPlatform } = usePlatform();
+  const { selectedCompany } = useCompany();
+  const { selectedProject } = useProject();
+
+  // Load versions when company, project, or platform changes
+  useEffect(() => {
+    if (selectedCompany && selectedProject && selectedPlatform) {
+      loadVersions();
+    } else {
+      setVersionsState([]);
+      setSelectedVersionState(null);
+    }
+  }, [selectedCompany, selectedProject, selectedPlatform]);
+
+  // Load versions from API
+  const loadVersions = async (): Promise<void> => {
+    if (!selectedCompany || !selectedProject || !selectedPlatform) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const fetchedVersions = await versionService.getVersions(
+        selectedCompany.id,
+        selectedProject.id,
+        selectedPlatform.id
+      );
+      setVersions(Array.isArray(fetchedVersions) ? fetchedVersions : []);
+    } catch (error) {
+      console.error('Error loading versions:', error);
+      setVersionsState([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Load selected version from localStorage on mount
   useEffect(() => {
@@ -93,6 +130,7 @@ export const VersionProvider: React.FC<VersionProviderProps> = ({ children }) =>
     setVersions,
     isLoading,
     setIsLoading,
+    loadVersions,
   };
 
   return (

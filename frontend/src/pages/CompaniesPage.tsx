@@ -32,7 +32,7 @@ type SortField = 'name' | 'memberCount' | 'createdAt' | 'updatedAt';
 type SortOrder = 'asc' | 'desc';
 
 export const CompaniesPage = () => {
-  const { refreshCompanies } = useCompany();
+  const { refreshCompanies, selectCompany } = useCompany();
   const [companies, setCompanies] = useState<UserCompany[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,10 +77,10 @@ export const CompaniesPage = () => {
       await companyService.createCompany(newCompany);
       setShowCreateModal(false);
       setNewCompany({ name: '' });
-      await loadCompanies();
       
-      // Also refresh the company context to update header selector
+      // Refresh both the company context and the page data
       await refreshCompanies();
+      await loadCompanies();
     } catch (err) {
       setError(formatErrorMessage(err));
     } finally {
@@ -100,10 +100,9 @@ export const CompaniesPage = () => {
     try {
       await companyService.deleteCompany(selectedCompanyForDelete.id);
       
-      await loadCompanies();
-      
-      // Refresh the company context to update header selector and handle auto-selection
+      // Refresh the company context and get updated data
       await refreshCompanies();
+      await loadCompanies(); // Also refresh local page data
       
       setShowDeleteModal(false);
       setSelectedCompanyForDelete(null);
@@ -429,7 +428,8 @@ export const CompaniesPage = () => {
                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
                       <div className="flex items-center justify-between">
                         <Link
-                          to={`/companies/${company.id}/projects`}
+                          to="/projects"
+                          onClick={() => selectCompany(company)}
                           className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700"
                         >
                           <Eye className="w-4 h-4 mr-1" />
@@ -494,7 +494,8 @@ export const CompaniesPage = () => {
                         </div>
                         <div className="flex items-center space-x-3">
                           <Link
-                            to={`/companies/${company.id}/projects`}
+                            to="/projects"
+                            onClick={() => selectCompany(company)}
                             className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-all duration-200"
                           >
                             <Eye className="w-4 h-4 mr-2" />
@@ -598,8 +599,8 @@ export const CompaniesPage = () => {
             companyId={selectedCompanyForInvite.id}
             companyName={selectedCompanyForInvite.name}
             onInviteSent={() => {
-              // Optionally refresh companies or show success message
-              loadCompanies();
+              // Invitation sent successfully - no need to refresh company list
+              setShowInviteModal(false);
             }}
           />
         )}

@@ -22,4 +22,5 @@ export interface VersionContextType {
   setVersions: (versions: Version[]) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
+  loadVersions: () => Promise<void>;
 }

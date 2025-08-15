@@ -4,7 +4,6 @@ import {
   Shield, 
   Home, 
   Building2, 
-  Users, 
   FolderOpen, 
   Settings, 
   Menu, 
@@ -14,14 +13,7 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
-  BarChart3,
-  FileText,
-  UserPlus,
-  Briefcase,
-  Calendar,
   Tag,
-  MessageSquare,
-  Bug,
   Target,
   LogOut
 } from 'lucide-react';
@@ -78,23 +70,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     const isProjectSelected = !!selectedProject;
     const isPlatformSelected = !!selectedPlatform;
     
-    const projectHref = selectedCompany 
-      ? `/companies/${selectedCompany.id}/projects`
-      : '/companies'; // Redirect to companies if no company selected
+    const projectHref = '/projects';
       
-    const platformHref = selectedCompany && selectedProject
-      ? `/companies/${selectedCompany.id}/projects/${selectedProject.id}/platforms`
-      : selectedCompany 
-        ? `/companies/${selectedCompany.id}/projects`  // Redirect to projects if no project selected
-        : '/companies'; // Redirect to companies if no company selected
+    const platformHref = '/platforms';
 
-    const versionHref = selectedCompany && selectedProject && selectedPlatform
-      ? `/companies/${selectedCompany.id}/projects/${selectedProject.id}/platforms/${selectedPlatform.id}/versions`
-      : selectedCompany && selectedProject
-        ? `/companies/${selectedCompany.id}/projects/${selectedProject.id}/platforms`  // Redirect to platforms if no platform selected
-        : selectedCompany 
-          ? `/companies/${selectedCompany.id}/projects`  // Redirect to projects if no project selected
-          : '/companies'; // Redirect to companies if no company selected
+    const versionHref = '/versions';
 
     return [
       { 
