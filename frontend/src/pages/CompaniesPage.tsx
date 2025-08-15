@@ -24,6 +24,7 @@ import { DashboardLayout } from '../components/layout';
 import { InviteUserModal, ConfirmDeleteModal } from '../components/common';
 import { companyService } from '../services';
 import { formatErrorMessage } from '../utils/helpers';
+import { useCompany } from '../contexts';
 import type { Company, CreateCompanyRequest, CompanyRole, UserCompany } from '../types';
 
 type ViewMode = 'grid' | 'list';
@@ -31,6 +32,7 @@ type SortField = 'name' | 'memberCount' | 'createdAt' | 'updatedAt';
 type SortOrder = 'asc' | 'desc';
 
 export const CompaniesPage = () => {
+  const { selectedCompany, selectCompany } = useCompany();
   const [companies, setCompanies] = useState<UserCompany[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +96,12 @@ export const CompaniesPage = () => {
     setIsDeleting(true);
     try {
       await companyService.deleteCompany(selectedCompanyForDelete.id);
+      
+      // If the deleted company is currently selected, clear the selection
+      if (selectedCompany && selectedCompany.id === selectedCompanyForDelete.id) {
+        selectCompany(null);
+      }
+      
       await loadCompanies();
       setShowDeleteModal(false);
       setSelectedCompanyForDelete(null);

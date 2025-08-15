@@ -9,10 +9,12 @@ import com.test.backend.entity.CompanyMember;
 import com.test.backend.entity.CompanyRole;
 import com.test.backend.entity.Project;
 import com.test.backend.entity.User;
+import com.test.backend.entity.Version;
 import com.test.backend.repository.CompanyMemberRepository;
 import com.test.backend.repository.CompanyRepository;
 import com.test.backend.repository.ProjectRepository;
 import com.test.backend.repository.UserRepository;
+import com.test.backend.repository.VersionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +40,9 @@ public class CompanyService {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private VersionRepository versionRepository;
 
     /**
      * Create a new company with the user as owner.
@@ -220,6 +225,14 @@ public class CompanyService {
         // First, soft delete all projects in this company
         List<Project> companyProjects = projectRepository.findByCompany(company);
         for (Project project : companyProjects) {
+            // First, soft delete all versions in this project
+            List<Version> projectVersions = versionRepository.findByProject(project);
+            for (Version version : projectVersions) {
+                version.markAsDeleted();
+            }
+            versionRepository.saveAll(projectVersions);
+            
+            // Then, soft delete the project
             project.markAsDeleted();
         }
         projectRepository.saveAll(companyProjects);

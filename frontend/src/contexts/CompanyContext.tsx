@@ -11,7 +11,7 @@ interface CompanyContextType {
   userRoles: Record<number, string>;
   isLoading: boolean;
   error: string | null;
-  selectCompany: (company: Company) => void;
+  selectCompany: (company: Company | null) => void;
   refreshCompanies: () => Promise<void>;
   getUserRole: (companyId: number) => Promise<string>;
 }
@@ -95,7 +95,7 @@ export const CompanyProvider = ({ children }: { children: React.ReactNode }) => 
   };
 
   // Select a company
-  const selectCompany = (company: Company): void => {
+  const selectCompany = (company: Company | null): void => {
     setSelectedCompany(company);
     saveCompany(company);
   };

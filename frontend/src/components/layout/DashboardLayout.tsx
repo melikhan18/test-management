@@ -25,7 +25,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAuth } from '../../contexts';
-import { CompanySelector, ProjectSelector, NotificationDropdown } from '../common';
+import { CompanySelector, ProjectSelector, VersionSelector, NotificationDropdown } from '../common';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -263,6 +263,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <CompanySelector />
               {/* Project Selector */}
               <ProjectSelector />
+              {/* Version Selector */}
+              <VersionSelector />
             </div>
             
             {/* Right side icons */}

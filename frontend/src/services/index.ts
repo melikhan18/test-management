@@ -2,6 +2,7 @@
 export { authService } from './authService';
 export { companyService } from './companyService';
 export { projectService } from './projectService';
+export { versionService } from './versionService';
 export { userService } from './userService';
 export { notificationService } from './notificationService';
 export { invitationService } from './invitationService';

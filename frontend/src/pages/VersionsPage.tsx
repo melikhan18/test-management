@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
-  FolderOpen, 
+  Tag, 
   Plus, 
   Search, 
   Filter, 
@@ -15,57 +15,57 @@ import {
   SortAsc,
   SortDesc,
   ArrowLeft,
-  Building2
+  Building2,
+  FolderOpen,
+  Loader2
 } from 'lucide-react';
-import { DashboardLayout } from '../components/layout';
+import { DashboardLayout } from '../components';
 import { ConfirmDeleteModal } from '../components/common';
-import { projectService, companyService } from '../services';
+import { versionService } from '../services';
 import { formatErrorMessage } from '../utils/helpers';
-import { useProject } from '../contexts';
-import type { Project, CreateProjectRequest, Company } from '../types';
+import { useCompany, useProject, useVersion } from '../contexts';
+import type { Version, CreateVersionRequest } from '../types';
 
 type ViewMode = 'grid' | 'list';
-type SortField = 'name' | 'createdAt' | 'updatedAt';
+type SortField = 'versionName' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 
-export const ProjectsPage = () => {
-  const { companyId } = useParams<{ companyId: string }>();
-  const { selectedProject, clearSelectedProject, refreshProjects } = useProject();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [company, setCompany] = useState<Company | null>(null);
+const VersionsPage: React.FC = () => {
+  const { companyId, projectId } = useParams<{ companyId: string; projectId: string }>();
+  const { selectedCompany } = useCompany();
+  const { selectedProject } = useProject();
+  const { selectedVersion, setSelectedVersion, setVersions: setContextVersions } = useVersion();
+  
+  const [versions, setVersions] = useState<Version[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [sortField, setSortField] = useState<SortField>('updatedAt');
+  const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedProjectForDelete, setSelectedProjectForDelete] = useState<Project | null>(null);
+  const [selectedVersionForDelete, setSelectedVersionForDelete] = useState<Version | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [newProject, setNewProject] = useState<CreateProjectRequest>({ name: '', description: '' });
+  const [newVersion, setNewVersion] = useState<CreateVersionRequest>({ versionName: '' });
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
-    if (companyId) {
+    if (companyId && projectId) {
       loadData();
     }
-  }, [companyId]);
+  }, [companyId, projectId]);
 
   const loadData = async () => {
+    if (!companyId || !projectId) return;
+
     try {
       setIsLoading(true);
       setError(null);
-      
-      const companyIdNum = parseInt(companyId!);
-      const [companyData, projectsData] = await Promise.all([
-        companyService.getCompany(companyIdNum),
-        projectService.getCompanyProjects(companyIdNum)
-      ]);
-      
-      setCompany(companyData);
-      setProjects(projectsData);
+      const versionData = await versionService.getVersions(parseInt(companyId), parseInt(projectId));
+      setVersions(versionData);
+      setContextVersions(versionData); // Update context versions as well
     } catch (err) {
       setError(formatErrorMessage(err));
     } finally {
@@ -73,15 +73,15 @@ export const ProjectsPage = () => {
     }
   };
 
-  const handleCreateProject = async (e: React.FormEvent) => {
+  const handleCreateVersion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProject.name.trim() || !companyId) return;
+    if (!newVersion.versionName.trim() || !companyId || !projectId) return;
 
     try {
       setIsCreating(true);
-      await projectService.createProject(parseInt(companyId), newProject);
+      await versionService.createVersion(parseInt(companyId), parseInt(projectId), newVersion);
       setShowCreateModal(false);
-      setNewProject({ name: '', description: '' });
+      setNewVersion({ versionName: '' });
       await loadData();
     } catch (err) {
       setError(formatErrorMessage(err));
@@ -90,65 +90,32 @@ export const ProjectsPage = () => {
     }
   };
 
-  const handleDeleteProject = (project: Project) => {
-    setSelectedProjectForDelete(project);
+  const handleDeleteVersion = (version: Version) => {
+    setSelectedVersionForDelete(version);
     setShowDeleteModal(true);
   };
 
-  const confirmDeleteProject = async () => {
-    if (!selectedProjectForDelete || !companyId) return;
+  const confirmDeleteVersion = async () => {
+    if (!selectedVersionForDelete || !companyId || !projectId) return;
 
     try {
       setIsDeleting(true);
-      await projectService.deleteProject(parseInt(companyId), selectedProjectForDelete.id);
+      await versionService.deleteVersion(parseInt(companyId), parseInt(projectId), selectedVersionForDelete.id);
       
-      // If the deleted project is currently selected, clear the selection
-      if (selectedProject && selectedProject.id === selectedProjectForDelete.id) {
-        clearSelectedProject();
+      // If the deleted version is currently selected, clear the selection
+      if (selectedVersion && selectedVersion.id === selectedVersionForDelete.id) {
+        setSelectedVersion(null);
       }
       
       setShowDeleteModal(false);
-      setSelectedProjectForDelete(null);
+      setSelectedVersionForDelete(null);
       await loadData();
-      
-      // Also refresh the project context
-      await refreshProjects();
     } catch (err) {
       setError(formatErrorMessage(err));
     } finally {
       setIsDeleting(false);
     }
   };
-
-  const filteredAndSortedProjects = projects
-    .filter(project => 
-      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
-    .sort((a, b) => {
-      let aValue, bValue;
-      
-      switch (sortField) {
-        case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-          break;
-        case 'createdAt':
-          aValue = new Date(a.createdAt).getTime();
-          bValue = new Date(b.createdAt).getTime();
-          break;
-        case 'updatedAt':
-          aValue = new Date(a.updatedAt).getTime();
-          bValue = new Date(b.updatedAt).getTime();
-          break;
-        default:
-          return 0;
-      }
-      
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -179,13 +146,38 @@ export const ProjectsPage = () => {
     return formatDate(dateString);
   };
 
+  const filteredAndSortedVersions = versions
+    .filter(version => 
+      version.versionName.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortField) {
+        case 'versionName':
+          aValue = a.versionName.toLowerCase();
+          bValue = b.versionName.toLowerCase();
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt).getTime();
+          bValue = new Date(b.createdAt).getTime();
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
   if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading projects...</p>
+            <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading versions...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -200,26 +192,29 @@ export const ProjectsPage = () => {
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-3">
               <Link
-                to="/companies"
+                to={`/companies/${companyId}/projects`}
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all duration-200"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <FolderOpen className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Tag className="w-6 h-6 text-white" />
               </div>
               <div>
                 <div className="flex items-center space-x-2">
-                  <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-                  {company && (
+                  <h1 className="text-3xl font-bold text-gray-900">Versions</h1>
+                  {selectedProject && (
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      <Building2 className="w-3 h-3 mr-1" />
-                      {company.name}
+                      <FolderOpen className="w-3 h-3 mr-1" />
+                      {selectedProject.name}
                     </span>
                   )}
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
-                  Manage projects in {company?.name || 'this company'}
+                  Manage versions in {selectedProject?.name || 'this project'}
+                  {selectedCompany && (
+                    <span className="text-gray-400"> • {selectedCompany.name}</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -227,10 +222,10 @@ export const ProjectsPage = () => {
           <div className="mt-4 md:mt-0 md:ml-4 flex items-center space-x-3">
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:from-purple-700 hover:to-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
+              className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-orange-600 to-orange-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:from-orange-700 hover:to-orange-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200"
             >
               <Plus className="w-4 h-4 mr-2" />
-              New Project
+              New Version
             </button>
           </div>
         </div>
@@ -245,10 +240,10 @@ export const ProjectsPage = () => {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search projects..."
+                    placeholder="Search versions..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                    className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                   />
                 </div>
               </div>
@@ -261,7 +256,7 @@ export const ProjectsPage = () => {
                     onClick={() => setViewMode('grid')}
                     className={`p-2 rounded-md transition-all duration-200 ${
                       viewMode === 'grid' 
-                        ? 'bg-white text-purple-600 shadow-sm' 
+                        ? 'bg-white text-orange-600 shadow-sm' 
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
@@ -271,7 +266,7 @@ export const ProjectsPage = () => {
                     onClick={() => setViewMode('list')}
                     className={`p-2 rounded-md transition-all duration-200 ${
                       viewMode === 'list' 
-                        ? 'bg-white text-purple-600 shadow-sm' 
+                        ? 'bg-white text-orange-600 shadow-sm' 
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
@@ -283,7 +278,7 @@ export const ProjectsPage = () => {
                 <div className="relative">
                   <button
                     onClick={() => setShowFilterMenu(!showFilterMenu)}
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
                   >
                     <Filter className="w-4 h-4 mr-2" />
                     Sort
@@ -294,9 +289,8 @@ export const ProjectsPage = () => {
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-10">
                       <div className="py-2">
                         {[
-                          { field: 'name' as SortField, label: 'Project Name' },
+                          { field: 'versionName' as SortField, label: 'Version Name' },
                           { field: 'createdAt' as SortField, label: 'Created Date' },
-                          { field: 'updatedAt' as SortField, label: 'Last Updated' },
                         ].map(({ field, label }) => (
                           <button
                             key={field}
@@ -330,21 +324,21 @@ export const ProjectsPage = () => {
           </div>
         )}
 
-        {/* Projects Grid/List */}
-        {filteredAndSortedProjects.length === 0 ? (
+        {/* Versions Grid/List */}
+        {filteredAndSortedVersions.length === 0 ? (
           <div className="text-center py-12">
-            <FolderOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
+            <Tag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No versions found</h3>
             <p className="text-gray-500 mb-6">
-              {searchQuery ? 'Try adjusting your search query.' : 'Get started by creating your first project.'}
+              {searchQuery ? 'Try adjusting your search query.' : 'Get started by creating your first version.'}
             </p>
             {!searchQuery && (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700"
+                className="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Create Project
+                Create Version
               </button>
             )}
           </div>
@@ -353,29 +347,24 @@ export const ProjectsPage = () => {
             ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
             : 'space-y-4'
           }>
-            {filteredAndSortedProjects.map((project) => {
+            {filteredAndSortedVersions.map((version) => {
               if (viewMode === 'grid') {
                 return (
                   <div
-                    key={project.id}
+                    key={version.id}
                     className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden group"
                   >
                     {/* Card Header */}
-                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-4 border-b border-gray-100">
+                    <div className="bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-4 border-b border-gray-100">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
-                            <FolderOpen className="w-5 h-5 text-white" />
+                          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-sm">
+                            <Tag className="w-5 h-5 text-white" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-purple-600 transition-colors truncate">
-                              {project.name}
+                            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-orange-600 transition-colors truncate">
+                              {version.versionName}
                             </h3>
-                            {project.description && (
-                              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                                {project.description}
-                              </p>
-                            )}
                           </div>
                         </div>
                         <div className="relative">
@@ -391,12 +380,12 @@ export const ProjectsPage = () => {
                       <div className="space-y-4">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-500">Created</span>
-                          <span className="text-gray-900">{formatDate(project.createdAt)}</span>
+                          <span className="text-gray-900">{formatDate(version.createdAt)}</span>
                         </div>
                         
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-500">Last Updated</span>
-                          <span className="text-gray-900">{formatRelativeTime(project.updatedAt)}</span>
+                          <span className="text-gray-900">{formatRelativeTime(version.createdAt)}</span>
                         </div>
                       </div>
                     </div>
@@ -404,19 +393,21 @@ export const ProjectsPage = () => {
                     {/* Card Actions */}
                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
                       <div className="flex items-center justify-between">
-                        <Link
-                          to={`/companies/${companyId}/projects/${project.id}/versions`}
-                          className="inline-flex items-center text-sm font-medium text-purple-600 hover:text-purple-700"
+                        <button
+                          onClick={() => {
+                            // TODO: Navigate to version details/tests
+                          }}
+                          className="inline-flex items-center text-sm font-medium text-orange-600 hover:text-orange-700"
                         >
                           <Eye className="w-4 h-4 mr-1" />
-                          View Versions
-                        </Link>
+                          View Tests
+                        </button>
                         <div className="flex items-center space-x-2">
-                          <button className="p-2 text-gray-400 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200">
+                          <button className="p-2 text-gray-400 hover:text-orange-600 rounded-lg hover:bg-orange-50 transition-all duration-200">
                             <Settings className="w-4 h-4" />
                           </button>
                           <button 
-                            onClick={() => handleDeleteProject(project)}
+                            onClick={() => handleDeleteVersion(version)}
                             className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all duration-200"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -430,43 +421,40 @@ export const ProjectsPage = () => {
                 // List view
                 return (
                   <div
-                    key={project.id}
+                    key={version.id}
                     className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200"
                   >
                     <div className="px-6 py-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4 min-w-0 flex-1">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
-                            <FolderOpen className="w-5 h-5 text-white" />
+                          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-sm">
+                            <Tag className="w-5 h-5 text-white" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 truncate">{project.name}</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 truncate">{version.versionName}</h3>
                             <div className="flex items-center space-x-4 mt-1">
-                              {project.description && (
-                                <span className="text-sm text-gray-500 truncate">
-                                  {project.description}
-                                </span>
-                              )}
                               <span className="text-sm text-gray-500 whitespace-nowrap">
-                                Updated {formatRelativeTime(project.updatedAt)}
+                                Created {formatRelativeTime(version.createdAt)}
                               </span>
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center space-x-3 ml-4">
-                          <Link
-                            to={`/companies/${companyId}/projects/${project.id}/versions`}
-                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-all duration-200"
+                          <button
+                            onClick={() => {
+                              // TODO: Navigate to version details/tests
+                            }}
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-700 border border-orange-200 rounded-lg hover:bg-orange-50 transition-all duration-200"
                           >
                             <Eye className="w-4 h-4 mr-2" />
-                            View Versions
-                          </Link>
+                            View Tests
+                          </button>
                           <div className="flex items-center space-x-2">
-                            <button className="p-2 text-gray-400 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200">
+                            <button className="p-2 text-gray-400 hover:text-orange-600 rounded-lg hover:bg-orange-50 transition-all duration-200">
                               <Settings className="w-4 h-4" />
                             </button>
                             <button 
-                              onClick={() => handleDeleteProject(project)}
+                              onClick={() => handleDeleteVersion(version)}
                               className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all duration-200"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -482,45 +470,31 @@ export const ProjectsPage = () => {
           </div>
         )}
 
-        {/* Create Project Modal */}
+        {/* Create Version Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Create New Project</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Create New Version</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  Create a new project in {company?.name}
+                  Create a new version in {selectedProject?.name}
                 </p>
               </div>
               
-              <form onSubmit={handleCreateProject} className="p-6">
+              <form onSubmit={handleCreateVersion} className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="projectName" className="block text-sm font-medium text-gray-700 mb-2">
-                      Project Name
+                    <label htmlFor="versionName" className="block text-sm font-medium text-gray-700 mb-2">
+                      Version Name
                     </label>
                     <input
-                      id="projectName"
                       type="text"
-                      value={newProject.name}
-                      onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                      placeholder="Enter project name"
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      id="versionName"
+                      value={newVersion.versionName}
+                      onChange={(e) => setNewVersion({ ...newVersion, versionName: e.target.value })}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      placeholder="e.g., v1.0.0, Sprint 1, Release 2024.1"
                       required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="projectDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                      Description (Optional)
-                    </label>
-                    <textarea
-                      id="projectDescription"
-                      value={newProject.description || ''}
-                      onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                      placeholder="Enter project description"
-                      rows={3}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                   </div>
                 </div>
@@ -530,18 +504,18 @@ export const ProjectsPage = () => {
                     type="button"
                     onClick={() => {
                       setShowCreateModal(false);
-                      setNewProject({ name: '', description: '' });
+                      setNewVersion({ versionName: '' });
                     }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    disabled={isCreating || !newProject.name.trim()}
-                    className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isCreating || !newVersion.versionName.trim()}
+                    className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isCreating ? 'Creating...' : 'Create Project'}
+                    {isCreating ? 'Creating...' : 'Create Version'}
                   </button>
                 </div>
               </form>
@@ -550,18 +524,18 @@ export const ProjectsPage = () => {
         )}
 
         {/* Delete Modal */}
-        {showDeleteModal && selectedProjectForDelete && (
+        {showDeleteModal && selectedVersionForDelete && (
           <ConfirmDeleteModal
             isOpen={showDeleteModal}
             onClose={() => {
               setShowDeleteModal(false);
-              setSelectedProjectForDelete(null);
+              setSelectedVersionForDelete(null);
             }}
-            onConfirm={confirmDeleteProject}
-            title="Delete Project"
-            message={`Are you sure you want to delete the project "${selectedProjectForDelete.name}"? This action cannot be undone.`}
-            confirmText={`Type "${selectedProjectForDelete.name}" to confirm`}
-            itemName={selectedProjectForDelete.name}
+            onConfirm={confirmDeleteVersion}
+            title="Delete Version"
+            message={`Are you sure you want to delete the version "${selectedVersionForDelete.versionName}"? This action cannot be undone.`}
+            confirmText={`Type "${selectedVersionForDelete.versionName}" to confirm`}
+            itemName={selectedVersionForDelete.versionName}
             isLoading={isDeleting}
           />
         )}
@@ -569,3 +543,5 @@ export const ProjectsPage = () => {
     </DashboardLayout>
   );
 };
+
+export default VersionsPage;

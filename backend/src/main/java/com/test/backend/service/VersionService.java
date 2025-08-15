@@ -1,7 +1,7 @@
 package com.test.backend.service;
 
-import com.test.backend.dto.CreateProjectRequest;
-import com.test.backend.dto.ProjectDto;
+import com.test.backend.dto.CreateVersionRequest;
+import com.test.backend.dto.VersionDto;
 import com.test.backend.entity.Company;
 import com.test.backend.entity.CompanyRole;
 import com.test.backend.entity.Project;
@@ -20,10 +20,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Service for project management operations.
+ * Service for version management operations.
  */
 @Service
-public class ProjectService {
+public class VersionService {
+
+    @Autowired
+    private VersionRepository versionRepository;
 
     @Autowired
     private ProjectRepository projectRepository;
@@ -37,45 +40,44 @@ public class ProjectService {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private VersionRepository versionRepository;
-
     /**
-     * Create a new project in a company.
+     * Create a new version in a project.
      */
     @Transactional
-    public ProjectDto createProject(Long companyId, CreateProjectRequest request, String userEmail) {
+    public VersionDto createVersion(Long companyId, Long projectId, CreateVersionRequest request, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new RuntimeException("Company not found"));
 
-        // Check if user has permission to create projects (OWNER or ADMIN)
+        // Check if user has permission to create versions (OWNER or ADMIN)
         if (!companyMemberRepository.hasRole(user, company, CompanyRole.OWNER) &&
             !companyMemberRepository.hasRole(user, company, CompanyRole.ADMIN)) {
-            throw new RuntimeException("Access denied. Only company owners and admins can create projects.");
+            throw new RuntimeException("Access denied. Only company owners and admins can create versions.");
         }
 
-        // Check if project name already exists globally
-        if (projectRepository.existsByNameAndNotDeleted(request.getName())) {
-            throw new RuntimeException("A project with this name already exists");
+        Project project = projectRepository.findByIdAndCompany(projectId, company)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        // Check if version name already exists in this project
+        if (versionRepository.existsByVersionNameAndProject(request.getVersionName(), project)) {
+            throw new RuntimeException("A version with this name already exists in the project");
         }
 
-        // Create project
-        Project project = new Project();
-        project.setName(request.getName());
-        project.setDescription(request.getDescription());
-        project.setCompany(company);
+        // Create version
+        Version version = new Version();
+        version.setVersionName(request.getVersionName());
+        version.setProject(project);
 
-        project = projectRepository.save(project);
-        return convertToDto(project);
+        version = versionRepository.save(version);
+        return convertToDto(version);
     }
 
     /**
-     * Get all projects for a company that user has access to.
+     * Get all versions for a project that user has access to.
      */
-    public List<ProjectDto> getCompanyProjects(Long companyId, String userEmail) {
+    public List<VersionDto> getProjectVersions(Long companyId, Long projectId, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -87,16 +89,19 @@ public class ProjectService {
             throw new RuntimeException("Access denied to this company");
         }
 
-        List<Project> projects = projectRepository.findActiveProjectsByCompany(company);
-        return projects.stream()
+        Project project = projectRepository.findByIdAndCompany(projectId, company)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        List<Version> versions = versionRepository.findActiveVersionsByProject(project);
+        return versions.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Get project by ID if user has access.
+     * Get version by ID if user has access.
      */
-    public ProjectDto getProject(Long companyId, Long projectId, String userEmail) {
+    public VersionDto getVersion(Long companyId, Long projectId, Long versionId, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -111,86 +116,90 @@ public class ProjectService {
         Project project = projectRepository.findByIdAndCompany(projectId, company)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
 
-        return convertToDto(project);
+        Version version = versionRepository.findByIdAndProject(versionId, project)
+                .orElseThrow(() -> new RuntimeException("Version not found"));
+
+        return convertToDto(version);
     }
 
     /**
-     * Update project.
+     * Update version.
      */
     @Transactional
-    public ProjectDto updateProject(Long companyId, Long projectId, CreateProjectRequest request, String userEmail) {
+    public VersionDto updateVersion(Long companyId, Long projectId, Long versionId, CreateVersionRequest request, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new RuntimeException("Company not found"));
 
-        // Check if user has permission to update projects (OWNER or ADMIN)
+        // Check if user has permission to update versions (OWNER or ADMIN)
         if (!companyMemberRepository.hasRole(user, company, CompanyRole.OWNER) &&
             !companyMemberRepository.hasRole(user, company, CompanyRole.ADMIN)) {
-            throw new RuntimeException("Access denied. Only company owners and admins can update projects.");
+            throw new RuntimeException("Access denied. Only company owners and admins can update versions.");
         }
 
         Project project = projectRepository.findByIdAndCompany(projectId, company)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
 
-        // Check if new name conflicts with existing projects
-        if (!project.getName().equals(request.getName()) && 
-            projectRepository.existsByNameAndCompany(request.getName(), company)) {
-            throw new RuntimeException("A project with this name already exists in the company");
+        Version version = versionRepository.findByIdAndProject(versionId, project)
+                .orElseThrow(() -> new RuntimeException("Version not found"));
+
+        // Check if new name conflicts with existing versions
+        if (!version.getVersionName().equals(request.getVersionName()) && 
+            versionRepository.existsByVersionNameAndProject(request.getVersionName(), project)) {
+            throw new RuntimeException("A version with this name already exists in the project");
         }
 
-        project.setName(request.getName());
-        project.setDescription(request.getDescription());
+        version.setVersionName(request.getVersionName());
 
-        project = projectRepository.save(project);
-        return convertToDto(project);
+        version = versionRepository.save(version);
+        return convertToDto(version);
     }
 
     /**
-     * Delete project (soft delete).
+     * Delete version (soft delete).
      */
     @Transactional
-    public void deleteProject(Long companyId, Long projectId, String userEmail) {
+    public void deleteVersion(Long companyId, Long projectId, Long versionId, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new RuntimeException("Company not found"));
 
-        // Check if user has permission to delete projects (OWNER or ADMIN)
+        // Check if user has permission to delete versions (OWNER or ADMIN)
         if (!companyMemberRepository.hasRole(user, company, CompanyRole.OWNER) &&
             !companyMemberRepository.hasRole(user, company, CompanyRole.ADMIN)) {
-            throw new RuntimeException("Access denied. Only company owners and admins can delete projects.");
+            throw new RuntimeException("Access denied. Only company owners and admins can delete versions.");
         }
 
         Project project = projectRepository.findByIdAndCompany(projectId, company)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
 
-        // First, soft delete all versions in this project
-        List<Version> projectVersions = versionRepository.findByProject(project);
-        for (Version version : projectVersions) {
-            version.markAsDeleted();
-        }
-        versionRepository.saveAll(projectVersions);
+        Version version = versionRepository.findByIdAndProject(versionId, project)
+                .orElseThrow(() -> new RuntimeException("Version not found"));
 
-        // Then, soft delete the project
-        project.markAsDeleted();
-        projectRepository.save(project);
+        version.markAsDeleted();
+        versionRepository.save(version);
     }
 
     /**
-     * Convert Project entity to DTO.
+     * Convert Version entity to DTO.
      */
-    private ProjectDto convertToDto(Project project) {
-        return new ProjectDto(
+    private VersionDto convertToDto(Version version) {
+        Project project = version.getProject();
+        Company company = project.getCompany();
+        
+        return new VersionDto(
+                version.getId(),
+                version.getVersionName(),
                 project.getId(),
                 project.getName(),
-                project.getDescription(),
-                project.getCompany().getId(),
-                project.getCompany().getName(),
-                project.getCreatedAt(),
-                project.getUpdatedAt()
+                company.getId(),
+                company.getName(),
+                version.getCreatedAt(),
+                version.getUpdatedAt()
         );
     }
 }
