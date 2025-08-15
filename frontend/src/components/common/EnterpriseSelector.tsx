@@ -131,7 +131,7 @@ const badgeVariants = {
 
 const sizeConfig = {
   sm: {
-    button: 'px-2.5 py-1.5 min-w-[180px]',
+    button: 'px-2.5 py-1.5 min-w-[180px] h-12',
     icon: 'w-5 h-5',
     iconContainer: 'w-6 h-6',
     text: 'text-xs',
@@ -139,7 +139,7 @@ const sizeConfig = {
     dropdown: 'w-[240px]'
   },
   md: {
-    button: 'px-3 py-2 min-w-[220px]',
+    button: 'px-3 py-2 min-w-[220px] h-14',
     icon: 'w-3.5 h-3.5',
     iconContainer: 'w-7 h-7',
     text: 'text-sm',
@@ -147,7 +147,7 @@ const sizeConfig = {
     dropdown: 'w-[280px]'
   },
   lg: {
-    button: 'px-4 py-3 min-w-[280px]',
+    button: 'px-4 py-3 min-w-[280px] h-16',
     icon: 'w-4 h-4',
     iconContainer: 'w-8 h-8',
     text: 'text-base',
@@ -247,7 +247,7 @@ export const EnterpriseSelector: React.FC<EnterpriseSelectorProps> = ({
   // Loading state
   if (loading) {
     return (
-      <div className={`flex items-center space-x-2 ${sizeStyles.button} bg-white/50 backdrop-blur-sm border border-gray-200/60 rounded-lg`}>
+      <div className={`flex items-center justify-center space-x-2 ${sizeStyles.button} bg-white/50 backdrop-blur-sm border border-gray-200/60 rounded-lg`}>
         <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
         <span className={`${sizeStyles.text} text-gray-600`}>Loading...</span>
       </div>
@@ -257,7 +257,7 @@ export const EnterpriseSelector: React.FC<EnterpriseSelectorProps> = ({
   // Error state
   if (error) {
     return (
-      <div className={`flex items-center space-x-2 ${sizeStyles.button} bg-red-50/50 backdrop-blur-sm border border-red-200/60 rounded-lg`}>
+      <div className={`flex items-center justify-center space-x-2 ${sizeStyles.button} bg-red-50/50 backdrop-blur-sm border border-red-200/60 rounded-lg`}>
         <AlertCircle className="w-4 h-4 text-red-500" />
         <span className={`${sizeStyles.text} text-red-600`}>Error loading {config.label.toLowerCase()}s</span>
       </div>
@@ -267,7 +267,7 @@ export const EnterpriseSelector: React.FC<EnterpriseSelectorProps> = ({
   // No options state
   if (!options.length) {
     return (
-      <div className={`flex items-center space-x-2 ${sizeStyles.button} bg-white/50 backdrop-blur-sm border border-gray-200/60 rounded-lg`}>
+      <div className={`flex items-center justify-center space-x-2 ${sizeStyles.button} bg-white/50 backdrop-blur-sm border border-gray-200/60 rounded-lg`}>
         <config.defaultIcon className="w-4 h-4 text-gray-400" />
         <span className={`${sizeStyles.text} text-gray-500`}>No {config.label.toLowerCase()}s</span>
       </div>

@@ -283,7 +283,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           
           {/* Header content */}
           <div className="flex-1 px-4 flex justify-between items-center">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               {/* Company Selector */}
               <EnterpriseCompanySelector />
               {/* Project Selector */}
