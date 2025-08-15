@@ -25,8 +25,8 @@ import {
   Target,
   LogOut
 } from 'lucide-react';
-import { useAuth, useCompany, useProject } from '../../contexts';
-import { CompanySelector, ProjectSelector, VersionSelector, NotificationDropdown } from '../common';
+import { useAuth, useCompany, useProject, usePlatform } from '../../contexts';
+import { CompanySelector, ProjectSelector, PlatformSelector, VersionSelector, NotificationDropdown } from '../common';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -69,22 +69,32 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { user, logout } = useAuth();
   const { selectedCompany } = useCompany();
   const { selectedProject } = useProject();
+  const { selectedPlatform } = usePlatform();
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Generate dynamic navigation based on context
   const getDynamicNavigation = (): NavigationItem[] => {
     const isCompanySelected = !!selectedCompany;
     const isProjectSelected = !!selectedProject;
+    const isPlatformSelected = !!selectedPlatform;
     
     const projectHref = selectedCompany 
       ? `/companies/${selectedCompany.id}/projects`
       : '/companies'; // Redirect to companies if no company selected
       
-    const versionHref = selectedCompany && selectedProject
-      ? `/companies/${selectedCompany.id}/projects/${selectedProject.id}/versions`
+    const platformHref = selectedCompany && selectedProject
+      ? `/companies/${selectedCompany.id}/projects/${selectedProject.id}/platforms`
       : selectedCompany 
         ? `/companies/${selectedCompany.id}/projects`  // Redirect to projects if no project selected
         : '/companies'; // Redirect to companies if no company selected
+
+    const versionHref = selectedCompany && selectedProject && selectedPlatform
+      ? `/companies/${selectedCompany.id}/projects/${selectedProject.id}/platforms/${selectedPlatform.id}/versions`
+      : selectedCompany && selectedProject
+        ? `/companies/${selectedCompany.id}/projects/${selectedProject.id}/platforms`  // Redirect to platforms if no platform selected
+        : selectedCompany 
+          ? `/companies/${selectedCompany.id}/projects`  // Redirect to projects if no project selected
+          : '/companies'; // Redirect to companies if no company selected
 
     return [
       { 
@@ -106,10 +116,16 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             disabled: !isCompanySelected
           },
           { 
+            name: 'Platforms', 
+            href: platformHref, 
+            icon: Target,
+            disabled: !isCompanySelected || !isProjectSelected
+          },
+          { 
             name: 'Versions', 
             href: versionHref, 
             icon: Tag,
-            disabled: !isCompanySelected || !isProjectSelected
+            disabled: !isCompanySelected || !isProjectSelected || !isPlatformSelected
           },
         ]
       },
@@ -146,7 +162,37 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const isActive = (href?: string) => {
     if (!href) return false;
-    return location.pathname === href;
+    
+    const currentPath = location.pathname;
+    
+    // Exact match for simple paths
+    if (href === '/dashboard' || href === '/companies') {
+      return currentPath === href;
+    }
+    
+    // More specific matching for nested routes
+    // Pattern: /companies/:companyId/projects/:projectId/platforms/:platformId/versions
+    // vs:     /companies/:companyId/projects/:projectId/platforms
+    
+    if (href.includes('/versions')) {
+      // Only active if we're actually on a versions page
+      return currentPath.includes('/versions');
+    }
+    
+    if (href.includes('/platforms')) {
+      // Only active if we're on platforms page but NOT on versions page
+      return currentPath.includes('/platforms') && !currentPath.includes('/versions');
+    }
+    
+    if (href.includes('/projects')) {
+      // Only active if we're on projects page but NOT on platforms or versions
+      return currentPath.includes('/projects') && 
+             !currentPath.includes('/platforms') && 
+             !currentPath.includes('/versions');
+    }
+    
+    // Fallback to exact match
+    return currentPath === href;
   };
 
   const isChildActive = (children?: NavigationItem[]) => {
@@ -256,6 +302,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <CompanySelector />
               {/* Project Selector */}
               <ProjectSelector />
+              {/* Platform Selector */}
+              <PlatformSelector />
               {/* Version Selector */}
               <VersionSelector />
             </div>

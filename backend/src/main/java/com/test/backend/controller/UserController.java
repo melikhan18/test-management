@@ -1,8 +1,10 @@
 package com.test.backend.controller;
 
 import com.test.backend.dto.UserDto;
+import com.test.backend.entity.CompanyMember;
 import com.test.backend.entity.User;
 import com.test.backend.enums.UserRole;
+import com.test.backend.repository.CompanyMemberRepository;
 import com.test.backend.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +31,9 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CompanyMemberRepository companyMemberRepository;
 
     @Operation(
             summary = "Get All Users",
@@ -69,6 +75,36 @@ public class UserController {
         
         UserDto userDto = new UserDto(user.getId(), user.getUsername(), user.getSurname(), user.getEmail(), user.getRole());
         return ResponseEntity.ok(userDto);
+    }
+
+    @Operation(
+            summary = "Get My Company Memberships",
+            description = "Get current user's company memberships for debugging"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Memberships retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "User not authenticated")
+    })
+    @GetMapping("/my-companies")
+    public ResponseEntity<?> getMyCompanies(Authentication authentication) {
+        String userEmail = authentication.getName();
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        List<CompanyMember> memberships = companyMemberRepository.findByUser(user);
+        
+        List<Object> result = memberships.stream()
+                .map(membership -> {
+                    return new Object() {
+                        public Long companyId = membership.getCompany().getId();
+                        public String companyName = membership.getCompany().getName();
+                        public String role = membership.getRole().toString();
+                        public String joinedAt = membership.getJoinedAt().toString();
+                    };
+                })
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(result);
     }
 
     @Operation(

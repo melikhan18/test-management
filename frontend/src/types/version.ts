@@ -1,6 +1,8 @@
 export interface Version {
   id: number;
   versionName: string;
+  platformId: number;
+  platformName: string;
   projectId: number;
   projectName: string;
   companyId: number;

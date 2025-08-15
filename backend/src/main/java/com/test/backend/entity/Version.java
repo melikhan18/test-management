@@ -7,13 +7,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Version entity representing project versions in the test management system.
+ * Version entity representing platform versions in the test management system.
  * Extends BaseEntity to inherit id, createdAt, updatedAt, and deletedAt fields.
  */
 @Entity
 @Table(name = "versions", indexes = {
     @Index(name = "idx_version_name", columnList = "version_name"),
-    @Index(name = "idx_version_project", columnList = "project_id")
+    @Index(name = "idx_version_platform", columnList = "platform_id")
 })
 @Getter
 @Setter
@@ -25,6 +25,6 @@ public class Version extends BaseEntity {
     private String versionName;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", nullable = false, foreignKey = @ForeignKey(name = "fk_version_project"))
-    private Project project;
+    @JoinColumn(name = "platform_id", nullable = false, foreignKey = @ForeignKey(name = "fk_version_platform"))
+    private Platform platform;
 }

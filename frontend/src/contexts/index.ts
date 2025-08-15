@@ -3,4 +3,5 @@ export { AuthProvider, useAuth } from './AuthContext';
 export { CompanyProvider, useCompany } from './CompanyContext';
 export { NotificationProvider, useNotification } from './NotificationContext';
 export { ProjectProvider, useProject } from './ProjectContext';
+export { PlatformProvider, usePlatform } from './PlatformContext';
 export { VersionProvider, useVersion } from './VersionContext';

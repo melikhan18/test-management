@@ -72,4 +72,10 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, Co
      */
     @Query("SELECT CASE WHEN COUNT(cm) > 0 THEN true ELSE false END FROM CompanyMember cm WHERE cm.user = :user AND cm.company = :company AND cm.role = :role")
     boolean hasRole(@Param("user") User user, @Param("company") Company company, @Param("role") CompanyRole role);
+    
+    /**
+     * Find company member by company ID and user ID.
+     */
+    @Query("SELECT cm FROM CompanyMember cm WHERE cm.company.id = :companyId AND cm.user.id = :userId")
+    Optional<CompanyMember> findByCompanyIdAndUserId(@Param("companyId") Long companyId, @Param("userId") Long userId);
 }

@@ -15,6 +15,8 @@ import java.time.LocalDateTime;
 public class VersionDto {
     private Long id;
     private String versionName;
+    private Long platformId;
+    private String platformName;
     private Long projectId;
     private String projectName;
     private Long companyId;

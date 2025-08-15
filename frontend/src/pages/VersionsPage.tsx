@@ -23,7 +23,7 @@ import { DashboardLayout } from '../components';
 import { ConfirmDeleteModal } from '../components/common';
 import { versionService } from '../services';
 import { formatErrorMessage } from '../utils/helpers';
-import { useCompany, useProject, useVersion } from '../contexts';
+import { useCompany, useProject, useVersion, usePlatform } from '../contexts';
 import type { Version, CreateVersionRequest } from '../types';
 
 type ViewMode = 'grid' | 'list';
@@ -34,6 +34,7 @@ const VersionsPage: React.FC = () => {
   const { companyId, projectId } = useParams<{ companyId: string; projectId: string }>();
   const { selectedCompany } = useCompany();
   const { selectedProject } = useProject();
+  const { selectedPlatform } = usePlatform();
   const { selectedVersion, setSelectedVersion, setVersions: setContextVersions } = useVersion();
   
   const [versions, setVersions] = useState<Version[]>([]);
@@ -52,18 +53,18 @@ const VersionsPage: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
-    if (companyId && projectId) {
+    if (companyId && projectId && selectedPlatform) {
       loadData();
     }
-  }, [companyId, projectId]);
+  }, [companyId, projectId, selectedPlatform]);
 
   const loadData = async () => {
-    if (!companyId || !projectId) return;
+    if (!companyId || !projectId || !selectedPlatform) return;
 
     try {
       setIsLoading(true);
       setError(null);
-      const versionData = await versionService.getVersions(parseInt(companyId), parseInt(projectId));
+      const versionData = await versionService.getVersions(parseInt(companyId), parseInt(projectId), selectedPlatform.id);
       setVersions(versionData);
       setContextVersions(versionData); // Update context versions as well
     } catch (err) {
@@ -75,11 +76,11 @@ const VersionsPage: React.FC = () => {
 
   const handleCreateVersion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newVersion.versionName.trim() || !companyId || !projectId) return;
+    if (!newVersion.versionName.trim() || !companyId || !projectId || !selectedPlatform) return;
 
     try {
       setIsCreating(true);
-      await versionService.createVersion(parseInt(companyId), parseInt(projectId), newVersion);
+      await versionService.createVersion(parseInt(companyId), parseInt(projectId), selectedPlatform.id, newVersion);
       setShowCreateModal(false);
       setNewVersion({ versionName: '' });
       await loadData();
@@ -96,11 +97,11 @@ const VersionsPage: React.FC = () => {
   };
 
   const confirmDeleteVersion = async () => {
-    if (!selectedVersionForDelete || !companyId || !projectId) return;
+    if (!selectedVersionForDelete || !companyId || !projectId || !selectedPlatform) return;
 
     try {
       setIsDeleting(true);
-      await versionService.deleteVersion(parseInt(companyId), parseInt(projectId), selectedVersionForDelete.id);
+      await versionService.deleteVersion(parseInt(companyId), parseInt(projectId), selectedPlatform.id, selectedVersionForDelete.id);
       
       // If the deleted version is currently selected, clear the selection
       if (selectedVersion && selectedVersion.id === selectedVersionForDelete.id) {
@@ -171,13 +172,15 @@ const VersionsPage: React.FC = () => {
       return 0;
     });
 
-  if (isLoading) {
+  if (isLoading || !selectedPlatform) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading versions...</p>
+            <p className="text-gray-500">
+              {!selectedPlatform ? 'Please select a platform first...' : 'Loading versions...'}
+            </p>
           </div>
         </div>
       </DashboardLayout>
@@ -209,9 +212,17 @@ const VersionsPage: React.FC = () => {
                       {selectedProject.name}
                     </span>
                   )}
+                  {selectedPlatform && (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      {selectedPlatform.platformType}
+                    </span>
+                  )}
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
                   Manage versions in {selectedProject?.name || 'this project'}
+                  {selectedPlatform && (
+                    <span className="text-gray-400"> • {selectedPlatform.platformType} Platform</span>
+                  )}
                   {selectedCompany && (
                     <span className="text-gray-400"> • {selectedCompany.name}</span>
                   )}
@@ -477,7 +488,7 @@ const VersionsPage: React.FC = () => {
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">Create New Version</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  Create a new version in {selectedProject?.name}
+                  Create a new version for {selectedPlatform?.platformType} platform in {selectedProject?.name}
                 </p>
               </div>
               

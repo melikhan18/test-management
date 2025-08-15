@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Plus, Tag } from 'lucide-react';
-import { useVersion, useProject, useCompany } from '../../contexts';
+import { useVersion, usePlatform, useProject, useCompany } from '../../contexts';
 import { versionService } from '../../services';
 import { formatErrorMessage } from '../../utils/helpers';
 import type { Version } from '../../types';
 
 const VersionSelector: React.FC = () => {
   const { selectedVersion, setSelectedVersion, versions, setVersions, isLoading, setIsLoading } = useVersion();
+  const { selectedPlatform } = usePlatform();
   const { selectedProject } = useProject();
   const { selectedCompany } = useCompany();
   const [isOpen, setIsOpen] = useState(false);
@@ -27,15 +28,15 @@ const VersionSelector: React.FC = () => {
     };
   }, []);
 
-  // Load versions when project changes
+  // Load versions when platform changes
   useEffect(() => {
-    if (selectedCompany && selectedProject) {
+    if (selectedCompany && selectedProject && selectedPlatform) {
       loadVersions();
     } else {
       setVersions([]);
       setSelectedVersion(null);
     }
-  }, [selectedCompany, selectedProject]);
+  }, [selectedCompany, selectedProject, selectedPlatform]);
 
   // Check if selected version still exists in the current versions list
   useEffect(() => {
@@ -48,16 +49,16 @@ const VersionSelector: React.FC = () => {
   }, [versions, selectedVersion, setSelectedVersion]);
 
   const loadVersions = async () => {
-    if (!selectedCompany || !selectedProject) return;
+    if (!selectedCompany || !selectedProject || !selectedPlatform) return;
 
     try {
       setIsLoading(true);
       setError(null);
-      const versionData = await versionService.getVersions(selectedCompany.id, selectedProject.id);
+      const versionData = await versionService.getVersions(selectedCompany.id, selectedProject.id, selectedPlatform.id);
       setVersions(versionData);
 
-      // If there's a selected version but it's not in the current project, clear it
-      if (selectedVersion && selectedVersion.projectId !== selectedProject.id) {
+      // If there's a selected version but it's not in the current platform, clear it
+      if (selectedVersion && selectedVersion.platformId !== selectedPlatform.id) {
         setSelectedVersion(null);
       }
     } catch (err) {
@@ -74,8 +75,8 @@ const VersionSelector: React.FC = () => {
     setIsOpen(false);
   };
 
-  // Don't show if no project is selected
-  if (!selectedProject) {
+  // Don't show if no platform is selected
+  if (!selectedPlatform) {
     return null;
   }
 
@@ -94,7 +95,7 @@ const VersionSelector: React.FC = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="group flex items-center space-x-2.5 px-3 py-2 bg-white/70 backdrop-blur-sm border border-gray-200/60 rounded-lg hover:bg-white/90 hover:border-gray-300/60 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-300 transition-all duration-200 min-w-[200px] shadow-sm hover:shadow-md"
-        disabled={!selectedProject}
+        disabled={!selectedPlatform}
       >
         {/* Version Icon */}
         <div className="relative">
@@ -118,7 +119,7 @@ const VersionSelector: React.FC = () => {
             </div>
           ) : (
             <div className="text-sm text-gray-500">
-              {!selectedProject ? 'Select project first' : 'No versions'}
+              {!selectedPlatform ? 'Select platform first' : 'No versions'}
             </div>
           )}
         </div>
@@ -138,7 +139,7 @@ const VersionSelector: React.FC = () => {
             <div className="p-4 text-sm text-gray-500 text-center">
               <Tag className="w-8 h-8 text-gray-300 mx-auto mb-2" />
               <p className="font-medium">No versions found</p>
-              <p className="text-xs text-gray-400 mt-1">Create your first version for this project</p>
+              <p className="text-xs text-gray-400 mt-1">Create your first version for this platform</p>
             </div>
           ) : (
             <>

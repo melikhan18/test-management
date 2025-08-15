@@ -2,17 +2,9 @@ package com.test.backend.service;
 
 import com.test.backend.dto.CreateVersionRequest;
 import com.test.backend.dto.VersionDto;
-import com.test.backend.entity.Company;
-import com.test.backend.entity.CompanyRole;
-import com.test.backend.entity.Project;
-import com.test.backend.entity.User;
-import com.test.backend.entity.Version;
-import com.test.backend.repository.CompanyMemberRepository;
-import com.test.backend.repository.CompanyRepository;
-import com.test.backend.repository.ProjectRepository;
-import com.test.backend.repository.UserRepository;
-import com.test.backend.repository.VersionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.test.backend.entity.*;
+import com.test.backend.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,78 +13,82 @@ import java.util.stream.Collectors;
 
 /**
  * Service for version management operations.
+ * Handles CRUD operations for versions within platforms.
  */
 @Service
+@RequiredArgsConstructor
 public class VersionService {
 
-    @Autowired
-    private VersionRepository versionRepository;
-
-    @Autowired
-    private ProjectRepository projectRepository;
-
-    @Autowired
-    private CompanyRepository companyRepository;
-
-    @Autowired
-    private CompanyMemberRepository companyMemberRepository;
-
-    @Autowired
-    private UserRepository userRepository;
+    private final VersionRepository versionRepository;
+    private final PlatformRepository platformRepository;
+    private final CompanyMemberRepository companyMemberRepository;
+    private final UserRepository userRepository;
 
     /**
-     * Create a new version in a project.
+     * Create a new version in a platform.
      */
     @Transactional
-    public VersionDto createVersion(Long companyId, Long projectId, CreateVersionRequest request, String userEmail) {
+    public VersionDto createVersion(Long companyId, Long projectId, Long platformId, CreateVersionRequest request, String userEmail) {
+        // Validate user and permissions
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new RuntimeException("Company not found"));
+        // Check user permission for this company
+        CompanyRole userRole = companyMemberRepository.findByCompanyIdAndUserId(companyId, user.getId())
+                .map(member -> member.getRole())
+                .orElseThrow(() -> new RuntimeException("Access denied to this company"));
 
-        // Check if user has permission to create versions (OWNER or ADMIN)
-        if (!companyMemberRepository.hasRole(user, company, CompanyRole.OWNER) &&
-            !companyMemberRepository.hasRole(user, company, CompanyRole.ADMIN)) {
+        if (userRole != CompanyRole.OWNER && userRole != CompanyRole.ADMIN) {
             throw new RuntimeException("Access denied. Only company owners and admins can create versions.");
         }
 
-        Project project = projectRepository.findByIdAndCompany(projectId, company)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+        // Get and validate platform
+        Platform platform = platformRepository.findActiveById(platformId)
+                .orElseThrow(() -> new RuntimeException("Platform not found with id: " + platformId));
 
-        // Check if version name already exists in this project
-        if (versionRepository.existsByVersionNameAndProject(request.getVersionName(), project)) {
-            throw new RuntimeException("A version with this name already exists in the project");
+        // Validate platform belongs to the specified project and company
+        if (!platform.getProject().getId().equals(projectId) || 
+            !platform.getProject().getCompany().getId().equals(companyId)) {
+            throw new RuntimeException("Platform does not belong to the specified project/company");
+        }
+
+        // Check if version name already exists in this platform
+        if (versionRepository.existsByVersionNameAndPlatform(request.getVersionName(), platform)) {
+            throw new RuntimeException("A version with this name already exists in this platform");
         }
 
         // Create version
         Version version = new Version();
         version.setVersionName(request.getVersionName());
-        version.setProject(project);
+        version.setPlatform(platform);
 
         version = versionRepository.save(version);
         return convertToDto(version);
     }
 
     /**
-     * Get all versions for a project that user has access to.
+     * Get all versions for a platform.
      */
-    public List<VersionDto> getProjectVersions(Long companyId, Long projectId, String userEmail) {
+    public List<VersionDto> getPlatformVersions(Long companyId, Long projectId, Long platformId, String userEmail) {
+        // Validate user and permissions
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new RuntimeException("Company not found"));
+        // Check user permission for this company
+        companyMemberRepository.findByCompanyIdAndUserId(companyId, user.getId())
+                .orElseThrow(() -> new RuntimeException("Access denied to this company"));
 
-        // Check if user is a member of this company
-        if (!companyMemberRepository.existsByUserAndCompany(user, company)) {
-            throw new RuntimeException("Access denied to this company");
+        // Get and validate platform
+        Platform platform = platformRepository.findActiveById(platformId)
+                .orElseThrow(() -> new RuntimeException("Platform not found with id: " + platformId));
+
+        // Validate platform belongs to the specified project and company
+        if (!platform.getProject().getId().equals(projectId) || 
+            !platform.getProject().getCompany().getId().equals(companyId)) {
+            throw new RuntimeException("Platform does not belong to the specified project/company");
         }
 
-        Project project = projectRepository.findByIdAndCompany(projectId, company)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
-
-        List<Version> versions = versionRepository.findActiveVersionsByProject(project);
+        List<Version> versions = versionRepository.findActiveVersionsByPlatform(platform);
         return versions.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -101,22 +97,26 @@ public class VersionService {
     /**
      * Get version by ID if user has access.
      */
-    public VersionDto getVersion(Long companyId, Long projectId, Long versionId, String userEmail) {
+    public VersionDto getVersion(Long companyId, Long projectId, Long platformId, Long versionId, String userEmail) {
+        // Validate user and permissions
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new RuntimeException("Company not found"));
+        // Check user permission for this company
+        companyMemberRepository.findByCompanyIdAndUserId(companyId, user.getId())
+                .orElseThrow(() -> new RuntimeException("Access denied to this company"));
 
-        // Check if user is a member of this company
-        if (!companyMemberRepository.existsByUserAndCompany(user, company)) {
-            throw new RuntimeException("Access denied to this company");
+        // Get and validate platform
+        Platform platform = platformRepository.findActiveById(platformId)
+                .orElseThrow(() -> new RuntimeException("Platform not found with id: " + platformId));
+
+        // Validate platform belongs to the specified project and company
+        if (!platform.getProject().getId().equals(projectId) || 
+            !platform.getProject().getCompany().getId().equals(companyId)) {
+            throw new RuntimeException("Platform does not belong to the specified project/company");
         }
 
-        Project project = projectRepository.findByIdAndCompany(projectId, company)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
-
-        Version version = versionRepository.findByIdAndProject(versionId, project)
+        Version version = versionRepository.findByIdAndPlatform(versionId, platform)
                 .orElseThrow(() -> new RuntimeException("Version not found"));
 
         return convertToDto(version);
@@ -126,29 +126,38 @@ public class VersionService {
      * Update version.
      */
     @Transactional
-    public VersionDto updateVersion(Long companyId, Long projectId, Long versionId, CreateVersionRequest request, String userEmail) {
+    public VersionDto updateVersion(Long companyId, Long projectId, Long platformId, Long versionId, 
+                                  CreateVersionRequest request, String userEmail) {
+        // Validate user and permissions
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new RuntimeException("Company not found"));
+        // Check user permission for this company
+        CompanyRole userRole = companyMemberRepository.findByCompanyIdAndUserId(companyId, user.getId())
+                .map(member -> member.getRole())
+                .orElseThrow(() -> new RuntimeException("Access denied to this company"));
 
-        // Check if user has permission to update versions (OWNER or ADMIN)
-        if (!companyMemberRepository.hasRole(user, company, CompanyRole.OWNER) &&
-            !companyMemberRepository.hasRole(user, company, CompanyRole.ADMIN)) {
+        if (userRole != CompanyRole.OWNER && userRole != CompanyRole.ADMIN) {
             throw new RuntimeException("Access denied. Only company owners and admins can update versions.");
         }
 
-        Project project = projectRepository.findByIdAndCompany(projectId, company)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+        // Get and validate platform
+        Platform platform = platformRepository.findActiveById(platformId)
+                .orElseThrow(() -> new RuntimeException("Platform not found with id: " + platformId));
 
-        Version version = versionRepository.findByIdAndProject(versionId, project)
+        // Validate platform belongs to the specified project and company
+        if (!platform.getProject().getId().equals(projectId) || 
+            !platform.getProject().getCompany().getId().equals(companyId)) {
+            throw new RuntimeException("Platform does not belong to the specified project/company");
+        }
+
+        Version version = versionRepository.findByIdAndPlatform(versionId, platform)
                 .orElseThrow(() -> new RuntimeException("Version not found"));
 
         // Check if new name conflicts with existing versions
         if (!version.getVersionName().equals(request.getVersionName()) && 
-            versionRepository.existsByVersionNameAndProject(request.getVersionName(), project)) {
-            throw new RuntimeException("A version with this name already exists in the project");
+            versionRepository.existsByVersionNameAndPlatform(request.getVersionName(), platform)) {
+            throw new RuntimeException("A version with this name already exists in this platform");
         }
 
         version.setVersionName(request.getVersionName());
@@ -161,23 +170,31 @@ public class VersionService {
      * Delete version (soft delete).
      */
     @Transactional
-    public void deleteVersion(Long companyId, Long projectId, Long versionId, String userEmail) {
+    public void deleteVersion(Long companyId, Long projectId, Long platformId, Long versionId, String userEmail) {
+        // Validate user and permissions
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new RuntimeException("Company not found"));
+        // Check user permission for this company
+        CompanyRole userRole = companyMemberRepository.findByCompanyIdAndUserId(companyId, user.getId())
+                .map(member -> member.getRole())
+                .orElseThrow(() -> new RuntimeException("Access denied to this company"));
 
-        // Check if user has permission to delete versions (OWNER or ADMIN)
-        if (!companyMemberRepository.hasRole(user, company, CompanyRole.OWNER) &&
-            !companyMemberRepository.hasRole(user, company, CompanyRole.ADMIN)) {
+        if (userRole != CompanyRole.OWNER && userRole != CompanyRole.ADMIN) {
             throw new RuntimeException("Access denied. Only company owners and admins can delete versions.");
         }
 
-        Project project = projectRepository.findByIdAndCompany(projectId, company)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+        // Get and validate platform
+        Platform platform = platformRepository.findActiveById(platformId)
+                .orElseThrow(() -> new RuntimeException("Platform not found with id: " + platformId));
 
-        Version version = versionRepository.findByIdAndProject(versionId, project)
+        // Validate platform belongs to the specified project and company
+        if (!platform.getProject().getId().equals(projectId) || 
+            !platform.getProject().getCompany().getId().equals(companyId)) {
+            throw new RuntimeException("Platform does not belong to the specified project/company");
+        }
+
+        Version version = versionRepository.findByIdAndPlatform(versionId, platform)
                 .orElseThrow(() -> new RuntimeException("Version not found"));
 
         version.markAsDeleted();
@@ -188,12 +205,15 @@ public class VersionService {
      * Convert Version entity to DTO.
      */
     private VersionDto convertToDto(Version version) {
-        Project project = version.getProject();
+        Platform platform = version.getPlatform();
+        Project project = platform.getProject();
         Company company = project.getCompany();
         
         return new VersionDto(
                 version.getId(),
                 version.getVersionName(),
+                platform.getId(),
+                platform.getName(),
                 project.getId(),
                 project.getName(),
                 company.getId(),

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useProject } from './ProjectContext';
+import { usePlatform } from './PlatformContext';
 import type { Version, VersionContextType } from '../types';
 
 const VersionContext = createContext<VersionContextType | undefined>(undefined);
@@ -20,7 +20,7 @@ export const VersionProvider: React.FC<VersionProviderProps> = ({ children }) =>
   const [selectedVersion, setSelectedVersionState] = useState<Version | null>(null);
   const [versions, setVersionsState] = useState<Version[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { selectedProject } = useProject();
+  const { selectedPlatform } = usePlatform();
 
   // Load selected version from localStorage on mount
   useEffect(() => {
@@ -50,14 +50,14 @@ export const VersionProvider: React.FC<VersionProviderProps> = ({ children }) =>
   const setVersions = (newVersions: Version[]) => {
     setVersionsState(newVersions);
     
-    // Check if current selected version still exists in the new list and belongs to current project
+    // Check if current selected version still exists in the new list and belongs to current platform
     const savedVersion = localStorage.getItem('selectedVersion');
     let currentSelectedVersion = null;
     
-    if (savedVersion && selectedProject) {
+    if (savedVersion && selectedPlatform) {
       try {
         const version = JSON.parse(savedVersion);
-        if (version.projectId === selectedProject.id) {
+        if (version.platformId === selectedPlatform.id) {
           const stillExists = newVersions.find((v: Version) => v.id === version.id);
           if (stillExists) {
             currentSelectedVersion = stillExists;
@@ -68,7 +68,7 @@ export const VersionProvider: React.FC<VersionProviderProps> = ({ children }) =>
             localStorage.removeItem('selectedVersion');
           }
         } else {
-          // Different project, clear selection
+          // Different platform, clear selection
           setSelectedVersionState(null);
           localStorage.removeItem('selectedVersion');
         }
@@ -79,7 +79,7 @@ export const VersionProvider: React.FC<VersionProviderProps> = ({ children }) =>
     }
     
     // If no version is selected and there are versions available, select the first one
-    if (!currentSelectedVersion && newVersions.length > 0 && selectedProject) {
+    if (!currentSelectedVersion && newVersions.length > 0 && selectedPlatform) {
       const firstVersion = newVersions[0];
       setSelectedVersionState(firstVersion);
       localStorage.setItem('selectedVersion', JSON.stringify(firstVersion));

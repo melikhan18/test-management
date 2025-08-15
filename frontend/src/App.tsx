@@ -1,16 +1,17 @@
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, CompanyProvider, NotificationProvider, ProjectProvider, VersionProvider } from './contexts';
+import { AuthProvider, CompanyProvider, NotificationProvider, ProjectProvider, PlatformProvider, VersionProvider } from './contexts';
 import { ProtectedRoute, PublicRoute } from './components';
-import { LoginPage, RegisterPage, DashboardPage, CompaniesPage, ProjectsPage, VersionsPage, ProjectsRedirectPage, VersionsRedirectPage } from './pages';
+import { LoginPage, RegisterPage, DashboardPage, CompaniesPage, ProjectsPage, PlatformsPage, PlatformsRedirectPage, VersionsPage, ProjectsRedirectPage, VersionsRedirectPage } from './pages';
 
 function App() {
   return (
     <AuthProvider>
       <CompanyProvider>
         <ProjectProvider>
-          <VersionProvider>
-            <NotificationProvider>
+          <PlatformProvider>
+            <VersionProvider>
+              <NotificationProvider>
             <Router>
               <Routes>
                 {/* Public routes */}
@@ -49,6 +50,14 @@ function App() {
                   } 
                 />
                 <Route 
+                  path="/platforms" 
+                  element={
+                    <ProtectedRoute>
+                      <PlatformsRedirectPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
                   path="/projects" 
                   element={
                     <ProtectedRoute>
@@ -73,7 +82,23 @@ function App() {
                   } 
                 />
                 <Route 
+                  path="/companies/:companyId/projects/:projectId/platforms" 
+                  element={
+                    <ProtectedRoute>
+                      <PlatformsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
                   path="/companies/:companyId/projects/:projectId/versions" 
+                  element={
+                    <ProtectedRoute>
+                      <VersionsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/companies/:companyId/projects/:projectId/platforms/:platformId/versions" 
                   element={
                     <ProtectedRoute>
                       <VersionsPage />
@@ -89,7 +114,8 @@ function App() {
               </Routes>
             </Router>
           </NotificationProvider>
-          </VersionProvider>
+            </VersionProvider>
+          </PlatformProvider>
         </ProjectProvider>
       </CompanyProvider>
     </AuthProvider>

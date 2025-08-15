@@ -51,4 +51,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
      */
     @Query("SELECT COUNT(p) FROM Project p WHERE p.company = :company AND p.deletedAt IS NULL")
     long countByCompany(@Param("company") Company company);
+    
+    /**
+     * Find project by ID if not soft deleted.
+     */
+    @Query("SELECT p FROM Project p WHERE p.id = :id AND p.deletedAt IS NULL")
+    Optional<Project> findActiveById(@Param("id") Long id);
 }

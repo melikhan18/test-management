@@ -408,11 +408,11 @@ export const ProjectsPage = () => {
                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
                       <div className="flex items-center justify-between">
                         <Link
-                          to={`/companies/${companyId}/projects/${project.id}/versions`}
+                          to={`/companies/${companyId}/projects/${project.id}/platforms`}
                           className="inline-flex items-center text-sm font-medium text-purple-600 hover:text-purple-700"
                         >
                           <Eye className="w-4 h-4 mr-1" />
-                          View Versions
+                          View Platforms
                         </Link>
                         <div className="flex items-center space-x-2">
                           <button className="p-2 text-gray-400 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200">
@@ -458,11 +458,11 @@ export const ProjectsPage = () => {
                         </div>
                         <div className="flex items-center space-x-3 ml-4">
                           <Link
-                            to={`/companies/${companyId}/projects/${project.id}/versions`}
+                            to={`/companies/${companyId}/projects/${project.id}/platforms`}
                             className="inline-flex items-center px-3 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-all duration-200"
                           >
                             <Eye className="w-4 h-4 mr-2" />
-                            View Versions
+                            View Platforms
                           </Link>
                           <div className="flex items-center space-x-2">
                             <button className="p-2 text-gray-400 hover:text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200">
