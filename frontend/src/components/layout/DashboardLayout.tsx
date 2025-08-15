@@ -479,9 +479,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 </div>
                 <div className="flex-1">
                   <div className="font-medium">{child.name}</div>
-                  {isActive(child.href) && (
-                    <div className="text-xs text-blue-600 mt-0.5 font-medium">Active</div>
-                  )}
                 </div>
                 {isActive(child.href) && (
                   <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-sm"></div>
@@ -575,9 +572,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         <>
                           <div className="flex-1">
                             <div className={`font-medium tracking-tight ${isActive(item.href) ? 'text-blue-700' : ''}`}>{item.name}</div>
-                            {isActive(item.href) && (
-                              <div className="text-xs text-blue-600 mt-0.5 font-semibold">Aktif</div>
-                            )}
                           </div>
                           {item.badge && (
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold shadow-sm ${isActive(item.href) ? 'bg-gradient-to-r from-blue-200 to-indigo-200 text-blue-800' : 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800'}`}>
@@ -626,9 +620,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       <>
                         <div className="flex-1 text-left">
                           <div className="font-medium tracking-tight">{item.name}</div>
-                          {hasActiveChild && (
-                            <div className="text-xs text-blue-600 mt-0.5 font-medium">Has active items</div>
-                          )}
                         </div>
                         <div className={`w-6 h-6 rounded-md flex items-center justify-center transition-all duration-200 ${
                           hasActiveChild ? 'bg-blue-100' : 'bg-gray-100 group-hover:bg-blue-100'
@@ -693,9 +684,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                             </div>
                             <div className="flex-1">
                               <div className="font-medium">{child.name}</div>
-                              {isChildActive && (
-                                <div className="text-xs text-blue-600 mt-0.5 font-medium">Active</div>
-                              )}
                             </div>
                           </Link>
                         );
@@ -741,9 +729,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 {!sidebarCollapsed && (
                   <div className="flex-1">
                     <div className="font-medium tracking-tight">{item.name}</div>
-                    {isActive(item.href) && (
-                      <div className="text-xs text-blue-600 mt-0.5 font-medium">Current</div>
-                    )}
                   </div>
                 )}
               </Link>
