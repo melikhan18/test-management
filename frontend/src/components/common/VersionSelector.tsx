@@ -118,7 +118,7 @@ const VersionSelector: React.FC = () => {
             </div>
           ) : (
             <div className="text-sm text-gray-500">
-              {!selectedProject ? 'Select project first' : 'No version selected'}
+              {!selectedProject ? 'Select project first' : 'No versions'}
             </div>
           )}
         </div>

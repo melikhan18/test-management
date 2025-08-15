@@ -78,7 +78,7 @@ export const ProjectSelector = () => {
             </>
           ) : (
             <div className="text-sm text-gray-500">
-              No project selected
+              No projects
             </div>
           )}
         </div>

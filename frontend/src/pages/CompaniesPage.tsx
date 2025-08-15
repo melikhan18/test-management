@@ -32,7 +32,7 @@ type SortField = 'name' | 'memberCount' | 'createdAt' | 'updatedAt';
 type SortOrder = 'asc' | 'desc';
 
 export const CompaniesPage = () => {
-  const { selectedCompany, selectCompany, refreshCompanies } = useCompany();
+  const { refreshCompanies } = useCompany();
   const [companies, setCompanies] = useState<UserCompany[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,12 +100,11 @@ export const CompaniesPage = () => {
     try {
       await companyService.deleteCompany(selectedCompanyForDelete.id);
       
-      // If the deleted company is currently selected, clear the selection
-      if (selectedCompany && selectedCompany.id === selectedCompanyForDelete.id) {
-        selectCompany(null);
-      }
-      
       await loadCompanies();
+      
+      // Refresh the company context to update header selector and handle auto-selection
+      await refreshCompanies();
+      
       setShowDeleteModal(false);
       setSelectedCompanyForDelete(null);
     } catch (err) {
