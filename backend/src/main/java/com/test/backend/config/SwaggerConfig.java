@@ -21,7 +21,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Test Management System API")
-                        .description("API documentation for Test Management System - A comprehensive platform for managing test cases, projects, and company workflows")
+                        .description("API documentation for Test Management System - A comprehensive platform for managing test scenarios, projects, and company workflows")
                         .version("v1.0.0")
                         .contact(new Contact()
                                 .name("Test Management Team")
